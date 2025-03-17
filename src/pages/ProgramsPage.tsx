@@ -642,8 +642,43 @@ const ProgramsPage: React.FC = () => {
       setIsOfflineMode(false); // Reset offline mode flag
       console.log('Fetching programs for page:', currentPage);
       
-      // First, fetch the paginated data for display
-      const result = await fetchPrograms(currentPage);
+      // Build extra parameters based on active filters
+      const extraParams: Record<string, string> = {};
+      
+      // Add filter parameters to the API call
+      if (filters.level) extraParams['filter[program_level]'] = filters.level;
+      if (filters.duration) extraParams['filter[duration]'] = filters.duration;
+      if (filters.country) extraParams['filter[country]'] = filters.country;
+      if (filters.category) extraParams['filter[category]'] = filters.category;
+      if (filters.university) extraParams['filter[university]'] = filters.university;
+      if (filters.feeMin) extraParams['filter[min_price]'] = filters.feeMin;
+      if (filters.feeMax) extraParams['filter[max_price]'] = filters.feeMax;
+      
+      // Add program type filters if any are active
+      const activeTypes = Object.entries(programTypes)
+        .filter(([_, isActive]) => isActive)
+        .map(([type]) => type);
+        
+      if (activeTypes.length > 0) {
+        extraParams['filter[program_types]'] = activeTypes.join(',');
+      }
+      
+      // Add search query if present
+      if (searchQuery) {
+        extraParams['search'] = searchQuery;
+      }
+      
+      // Add tab filter if needed
+      if (activeTab !== 'all') {
+        extraParams['filter[tag]'] = activeTab === 'top' ? 'top program' : 
+                                   activeTab === 'fast' ? 'fast acceptance' : 'intake offer';
+      }
+      
+      // First, fetch the paginated data for display with filters applied
+      const result = await fetchPrograms(currentPage, {
+        extraParams,
+        forceRefresh: true // Force refresh to ensure we get fresh data with the filters
+      });
       
       if (result.programs.length === 0) {
         console.warn('No programs received for the current page');
@@ -660,91 +695,94 @@ const ProgramsPage: React.FC = () => {
       setFilteredPrograms(result.programs);
       setTotalPages(result.totalPages);
       
-      // Then, fetch all programs to extract comprehensive filter options
+      // Then, fetch all programs to extract comprehensive filter options (only if needed)
       try {
-        const allPrograms = await fetchAllPrograms();
-        console.log('Fetched all programs for filters:', allPrograms.length);
-        
-        // Extract filter options from all programs
-        const levels = new Set<string>();
-        const durations = new Set<string>();
-        const countries = new Set<string>();
-        const categories = new Set<string>();
-        const universities = new Set<string>();
-        
-        allPrograms.forEach(program => {
-          // Extract levels
-          const level = program.attributes?.find(attr => attr.name === "Program Level")?.options[0];
-          if (level) levels.add(level);
+        // Only load all programs for filter options if we haven't already
+        if (filterOptions.levels.length === 0 || filterOptions.countries.length === 0) {
+          const allPrograms = await fetchAllPrograms();
+          console.log('Fetched all programs for filters:', allPrograms.length);
           
-          // Extract durations
-          const duration = program.attributes?.find(attr => attr.name === "Duration")?.options[0];
-          if (duration) durations.add(duration);
+          // Extract filter options from all programs
+          const levels = new Set<string>();
+          const durations = new Set<string>();
+          const countries = new Set<string>();
+          const categories = new Set<string>();
+          const universities = new Set<string>();
           
-          // Extract countries from both attribute and meta_data
-          if (program.attributes?.find(attr => attr.name === "Country")?.options[0]) {
-            const countryAttr = program.attributes?.find(attr => attr.name === "Country" || attr.name === "pa_country")?.options[0];
-            if (countryAttr) {
-              countries.add(countryAttr);
-              console.log('Added country from attribute:', countryAttr);
+          allPrograms.forEach(program => {
+            // Extract levels
+            const level = program.attributes?.find(attr => attr.name === "Program Level")?.options[0];
+            if (level) levels.add(level);
+            
+            // Extract durations
+            const duration = program.attributes?.find(attr => attr.name === "Duration")?.options[0];
+            if (duration) durations.add(duration);
+            
+            // Extract countries from both attribute and meta_data
+            if (program.attributes?.find(attr => attr.name === "Country")?.options[0]) {
+              const countryAttr = program.attributes?.find(attr => attr.name === "Country" || attr.name === "pa_country")?.options[0];
+              if (countryAttr) {
+                countries.add(countryAttr);
+                console.log('Added country from attribute:', countryAttr);
+              }
             }
-          }
-          
-          if (program.institution?.location) {
-            countries.add(program.institution.location);
-            console.log('Added country from institution:', program.institution.location);
-          } else {
-            // Try to find location from meta_data if institution object is not available
-            const locationMeta = program.meta_data?.find(meta => 
-              meta.key === '_institution_location' || 
-              meta.key === 'institution_location'
-            );
-            if (locationMeta && locationMeta.value) {
-              countries.add(locationMeta.value);
-              console.log('Added country from meta_data:', locationMeta.value);
+            
+            if (program.institution?.location) {
+              countries.add(program.institution.location);
+              console.log('Added country from institution:', program.institution.location);
+            } else {
+              // Try to find location from meta_data if institution object is not available
+              const locationMeta = program.meta_data?.find(meta => 
+                meta.key === '_institution_location' || 
+                meta.key === 'institution_location'
+              );
+              if (locationMeta && locationMeta.value) {
+                countries.add(locationMeta.value);
+                console.log('Added country from meta_data:', locationMeta.value);
+              }
             }
-          }
-          
-          // Extract universities from both attribute and meta_data
-          if (program.attributes?.find(attr => attr.name === "School")?.options[0]) {
-            const schoolAttr = program.attributes?.find(attr => attr.name === "School" || attr.name === "pa_school")?.options[0];
-            if (schoolAttr) {
-              universities.add(schoolAttr);
-              console.log('Added university from attribute:', schoolAttr);
+            
+            // Extract universities from both attribute and meta_data
+            if (program.attributes?.find(attr => attr.name === "School")?.options[0]) {
+              const schoolAttr = program.attributes?.find(attr => attr.name === "School" || attr.name === "pa_school")?.options[0];
+              if (schoolAttr) {
+                universities.add(schoolAttr);
+                console.log('Added university from attribute:', schoolAttr);
+              }
             }
-          }
-          
-          if (program.institution?.name) {
-            universities.add(program.institution.name);
-            console.log('Added university from institution:', program.institution.name);
-          } else {
-            // Try to find institution name from meta_data if institution object is not available
-            const institutionMeta = program.meta_data?.find(meta => 
-              meta.key === '_institution_name' || 
-              meta.key === 'institution_name'
-            );
-            if (institutionMeta && institutionMeta.value) {
-              universities.add(institutionMeta.value);
-              console.log('Added university from meta_data:', institutionMeta.value);
+            
+            if (program.institution?.name) {
+              universities.add(program.institution.name);
+              console.log('Added university from institution:', program.institution.name);
+            } else {
+              // Try to find institution name from meta_data if institution object is not available
+              const institutionMeta = program.meta_data?.find(meta => 
+                meta.key === '_institution_name' || 
+                meta.key === 'institution_name'
+              );
+              if (institutionMeta && institutionMeta.value) {
+                universities.add(institutionMeta.value);
+                console.log('Added university from meta_data:', institutionMeta.value);
+              }
             }
-          }
-          
-          // Extract categories
-          program.categories.forEach(category => {
-            categories.add(category.name);
+            
+            // Extract categories
+            program.categories.forEach(category => {
+              categories.add(category.name);
+            });
           });
-        });
-        
-        const filterOpts = {
-          levels: Array.from(levels),
-          durations: Array.from(durations),
-          countries: Array.from(countries),
-          categories: Array.from(categories),
-          universities: Array.from(universities)
-        };
-        
-        console.log('Filter options generated:', filterOpts);
-        setFilterOptions(filterOpts);
+          
+          const filterOpts = {
+            levels: Array.from(levels),
+            durations: Array.from(durations),
+            countries: Array.from(countries),
+            categories: Array.from(categories),
+            universities: Array.from(universities)
+          };
+          
+          console.log('Filter options generated:', filterOpts);
+          setFilterOptions(filterOpts);
+        }
       } catch (filterError) {
         console.error('Error fetching filter options:', filterError);
         // If we fail to fetch all programs for filters, check if we're in offline mode
@@ -789,6 +827,19 @@ const ProgramsPage: React.FC = () => {
     loadPrograms();
   }, [currentPage]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Modified useEffect for filter and search changes to reload data
+  useEffect(() => {
+    // When filters or search change, reset to page 1 and reload data
+    if (currentPage === 1) {
+      // Already on page 1, just reload
+      loadPrograms();
+    } else {
+      // Not on page 1, need to reset page which will trigger the other useEffect
+      setCurrentPage(1);
+    }
+  }, [searchQuery, activeTab, filters, sortOption, programTypes]);  // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Keep the existing filter effect for client-side filtering
   useEffect(() => {
     // Filter programs based on search and filters
     let filtered = [...programs];
@@ -1161,10 +1212,9 @@ const ProgramsPage: React.FC = () => {
 
   // Function to handle page change
   const handlePageChange = (page: number) => {
-    // Clear cache to ensure fresh data
-    clearProgramsCache();
     setCurrentPage(page);
     setLoading(true); // Set loading to true when changing pages
+    // No need to clear cache here as we'll force refresh in loadPrograms
     window.scrollTo(0, 0); // Scroll to top when changing page
   };
 
