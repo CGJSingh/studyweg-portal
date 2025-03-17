@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import styled from 'styled-components';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { IconName } from '@fortawesome/fontawesome-svg-core';
+import { DashboardSkeleton } from '../components/SkeletonLoaders';
 
 const DashboardContainer = styled.div`
   max-width: 1200px;
@@ -359,6 +360,7 @@ const mockActivities = [
 const DashboardPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState('all');
   const [activities, setActivities] = useState(mockActivities);
+  const [loading, setLoading] = useState(true);
 
   // In a real application, you would fetch this data from an API
   useEffect(() => {
@@ -369,6 +371,19 @@ const DashboardPage: React.FC = () => {
       setActivities(mockActivities.filter(activity => activity.type === activeTab));
     }
   }, [activeTab]);
+
+  // Simulate data loading
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 1500); // Show skeleton for 1.5 seconds
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (loading) {
+    return <DashboardSkeleton />;
+  }
 
   return (
     <DashboardContainer>

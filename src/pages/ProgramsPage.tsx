@@ -17,6 +17,7 @@ import {
   faChevronLeft,
   faChevronRight
 } from '@fortawesome/free-solid-svg-icons';
+import { ProgramsListSkeleton } from '../components/SkeletonLoaders';
 
 const PageContainer = styled.div`
   max-width: 1200px;
@@ -580,12 +581,17 @@ const ProgramsPage: React.FC = () => {
     return pageNumbers;
   };
 
+  // Add loading effect
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 1800); // Show skeleton for 1.8 seconds to simulate API fetch
+
+    return () => clearTimeout(timer);
+  }, []);
+
   if (loading) {
-    return (
-      <PageContainer>
-        <LoadingMessage>Loading programs...</LoadingMessage>
-      </PageContainer>
-    );
+    return <ProgramsListSkeleton />;
   }
 
   if (error) {

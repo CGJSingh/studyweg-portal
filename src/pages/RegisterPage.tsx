@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { RegisterFormSkeleton } from '../components/SkeletonLoaders';
 
 const RegisterContainer = styled.div`
   display: flex;
@@ -162,9 +163,19 @@ const RegisterPage: React.FC = () => {
     confirmPassword: ''
   });
   const [loading, setLoading] = useState(false);
+  const [pageLoading, setPageLoading] = useState(true);
   const [errors, setErrors] = useState<{[key: string]: string}>({});
   
   const navigate = useNavigate();
+
+  // Simulate initial page loading
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setPageLoading(false);
+    }, 1200); // Show skeleton for 1.2 seconds
+
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -239,6 +250,10 @@ const RegisterPage: React.FC = () => {
     // Implement Apple OAuth signup logic
     console.log('Apple signup clicked');
   };
+
+  if (pageLoading) {
+    return <RegisterFormSkeleton />;
+  }
 
   return (
     <RegisterContainer>

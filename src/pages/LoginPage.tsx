@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { LoginFormSkeleton } from '../components/SkeletonLoaders';
 
 const LoginContainer = styled.div`
   display: flex;
@@ -149,9 +150,19 @@ const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [pageLoading, setPageLoading] = useState(true);
   const [error, setError] = useState('');
   
   const navigate = useNavigate();
+
+  // Simulate initial page loading
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setPageLoading(false);
+    }, 1200); // Show skeleton for 1.2 seconds
+
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -183,6 +194,10 @@ const LoginPage: React.FC = () => {
     // Implement Apple OAuth logic
     console.log('Apple login clicked');
   };
+
+  if (pageLoading) {
+    return <LoginFormSkeleton />;
+  }
 
   return (
     <LoginContainer>

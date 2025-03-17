@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { ProfileSkeleton } from '../components/SkeletonLoaders';
 
 const ProfileContainer = styled.div`
   max-width: 1000px;
@@ -325,6 +326,7 @@ interface ProfileData {
 const ProfilePage: React.FC = () => {
   const [activeTab, setActiveTab] = useState('profile');
   const [editMode, setEditMode] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [profileData, setProfileData] = useState<ProfileData>({
     firstName: 'Alex',
     lastName: 'Johnson',
@@ -335,6 +337,15 @@ const ProfilePage: React.FC = () => {
     university: 'New York University',
     fieldOfStudy: 'Computer Science'
   });
+
+  // Simulate data loading
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 1500); // Show skeleton for 1.5 seconds
+
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -569,6 +580,10 @@ const ProfilePage: React.FC = () => {
       </AchievementGrid>
     );
   };
+
+  if (loading) {
+    return <ProfileSkeleton />;
+  }
 
   return (
     <ProfileContainer>

@@ -31,6 +31,7 @@ import {
   faGavel,
   faChalkboardTeacher
 } from '@fortawesome/free-solid-svg-icons';
+import { ProgramDetailsSkeleton } from '../components/SkeletonLoaders';
 
 const PageContainer = styled.div`
   max-width: 1200px;
@@ -776,16 +777,20 @@ const ProgramDetailsPage: React.FC = () => {
     }
   }, [id]);
 
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 2000); // Show skeleton for 2 seconds to simulate API fetch
+
+    return () => clearTimeout(timer);
+  }, []);
+
   const handleBookmark = () => {
     setBookmarked(!bookmarked);
   };
 
   if (loading) {
-    return (
-      <PageContainer>
-        <LoadingMessage>Loading program details...</LoadingMessage>
-      </PageContainer>
-    );
+    return <ProgramDetailsSkeleton />;
   }
 
   if (error || !program) {
