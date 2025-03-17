@@ -15,7 +15,9 @@ import {
   faTag,
   faTimes,
   faChevronLeft,
-  faChevronRight
+  faChevronRight,
+  faDollarSign,
+  faUniversity
 } from '@fortawesome/free-solid-svg-icons';
 import { ProgramsListSkeleton } from '../components/SkeletonLoaders';
 
@@ -87,10 +89,22 @@ const UserEmail = styled.span`
 
 const SearchContainer = styled.div`
   position: relative;
-  max-width: 400px;
   width: 100%;
-  margin: 0 auto;
   margin-bottom: 1.5rem;
+`;
+
+const SearchFilterRow = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+`;
+
+const SearchInputWrapper = styled.div`
+  position: relative;
+  flex: 1;
+  max-width: 600px;
 `;
 
 const SearchIcon = styled.div`
@@ -170,11 +184,18 @@ const NoResultsMessage = styled.div`
 
 // New styled components for filtering
 const FiltersContainer = styled.div`
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  width: 320px;
   background: white;
   border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  padding: 1rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  padding: 1.25rem;
   margin-bottom: 1.5rem;
+  z-index: 100;
+  max-height: 80vh;
+  overflow-y: auto;
 `;
 
 const FilterHeader = styled.div`
@@ -368,11 +389,58 @@ const NoSuggestions = styled.div`
   font-style: italic;
 `;
 
+// Add a new FilterButton style
+const FilterButton = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: #f39c12;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 0.75rem 1.25rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  
+  &:hover {
+    background-color: #e08e0b;
+  }
+`;
+
+// Add a new range filter component
+const RangeFilterGroup = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+`;
+
+const RangeInputs = styled.div`
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+`;
+
+const RangeInput = styled.input`
+  width: 100%;
+  padding: 0.6rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  
+  &:focus {
+    outline: none;
+    border-color: #f39c12;
+  }
+`;
+
 // Define tab types
 type TabType = 'all' | 'top' | 'fast' | 'intake';
 
 // Define sort options
-type SortOption = 'default' | 'name-asc' | 'name-desc' | 'level-asc' | 'level-desc';
+type SortOption = 'default' | 'name-asc' | 'name-desc' | 'level-asc' | 'level-desc' | 'fee-asc' | 'fee-desc' | 'rating-asc' | 'rating-desc';
 
 const ProgramsPage: React.FC = () => {
   const [programs, setPrograms] = useState<Program[]>([]);
@@ -394,22 +462,30 @@ const ProgramsPage: React.FC = () => {
     durations: string[];
     countries: string[];
     categories: string[];
+    universities: string[];
   }>({
     levels: [],
     durations: [],
     countries: [],
-    categories: []
+    categories: [],
+    universities: []
   });
   const [filters, setFilters] = useState<{
     level: string;
     duration: string;
     country: string;
     category: string;
+    university: string;
+    feeMin: string;
+    feeMax: string;
   }>({
     level: '',
     duration: '',
     country: '',
-    category: ''
+    category: '',
+    university: '',
+    feeMin: '',
+    feeMax: ''
   });
   const [sortOption, setSortOption] = useState<SortOption>('default');
   
@@ -437,6 +513,7 @@ const ProgramsPage: React.FC = () => {
         const durations = new Set<string>();
         const countries = new Set<string>();
         const categories = new Set<string>();
+        const universities = new Set<string>();
         
         result.programs.forEach(program => {
           // Extract levels
@@ -452,6 +529,11 @@ const ProgramsPage: React.FC = () => {
             countries.add(program.institution.location);
           }
           
+          // Extract universities
+          if (program.institution?.name) {
+            universities.add(program.institution.name);
+          }
+          
           // Extract categories
           program.categories.forEach(category => {
             categories.add(category.name);
@@ -462,7 +544,8 @@ const ProgramsPage: React.FC = () => {
           levels: Array.from(levels),
           durations: Array.from(durations),
           countries: Array.from(countries),
-          categories: Array.from(categories)
+          categories: Array.from(categories),
+          universities: Array.from(universities)
         });
       } catch (err: any) {
         setError(err.message || 'Failed to load programs');
@@ -533,6 +616,23 @@ const ProgramsPage: React.FC = () => {
       );
     }
     
+    // Apply university filter
+    if (filters.university) {
+      filtered = filtered.filter(program => 
+        program.institution?.name === filters.university
+      );
+    }
+    
+    // Apply fee range filter
+    if (filters.feeMin || filters.feeMax) {
+      filtered = filtered.filter(program => {
+        const price = parseFloat(program.regular_price || program.sale_price || '0');
+        const minOk = !filters.feeMin || price >= parseFloat(filters.feeMin);
+        const maxOk = !filters.feeMax || price <= parseFloat(filters.feeMax);
+        return minOk && maxOk;
+      });
+    }
+    
     // Apply sorting
     if (sortOption === 'name-asc') {
       filtered.sort((a, b) => a.name.localeCompare(b.name));
@@ -546,6 +646,26 @@ const ProgramsPage: React.FC = () => {
         return sortOption === 'level-asc' 
           ? levelA.localeCompare(levelB) 
           : levelB.localeCompare(levelA);
+      });
+    } else if (sortOption === 'fee-asc' || sortOption === 'fee-desc') {
+      filtered.sort((a, b) => {
+        // Extract price from regular_price or sale_price attribute, defaulting to 0
+        const feeA = parseFloat(a.regular_price || a.sale_price || '0');
+        const feeB = parseFloat(b.regular_price || b.sale_price || '0');
+        
+        return sortOption === 'fee-asc' 
+          ? feeA - feeB 
+          : feeB - feeA;
+      });
+    } else if (sortOption === 'rating-asc' || sortOption === 'rating-desc') {
+      filtered.sort((a, b) => {
+        // Extract rating from the attributes, defaulting to 0
+        const ratingA = parseFloat(a.attributes?.find(attr => attr.name === "Rating")?.options[0] || '0');
+        const ratingB = parseFloat(b.attributes?.find(attr => attr.name === "Rating")?.options[0] || '0');
+        
+        return sortOption === 'rating-asc' 
+          ? ratingA - ratingB 
+          : ratingB - ratingA;
       });
     }
     
@@ -672,9 +792,37 @@ const ProgramsPage: React.FC = () => {
       level: '',
       duration: '',
       country: '',
-      category: ''
+      category: '',
+      university: '',
+      feeMin: '',
+      feeMax: ''
     });
     setSortOption('default');
+  };
+  
+  // Handle fee range changes
+  const handleFeeMinChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFilters(prev => ({
+      ...prev,
+      feeMin: e.target.value
+    }));
+    setCurrentPage(1);
+  };
+
+  const handleFeeMaxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFilters(prev => ({
+      ...prev,
+      feeMax: e.target.value
+    }));
+    setCurrentPage(1);
+  };
+
+  const handleUniversityChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setFilters(prev => ({
+      ...prev,
+      university: e.target.value
+    }));
+    setCurrentPage(1);
   };
   
   // Get active filter count
@@ -758,17 +906,26 @@ const ProgramsPage: React.FC = () => {
   return (
     <PageContainer>
       <SearchContainer>
-        <SearchIcon>
-          <FontAwesomeIcon icon={faSearch} />
-        </SearchIcon>
-        <SearchInput 
-          type="text" 
-          placeholder="Search programs, colleges, or descriptions" 
-          value={searchQuery}
-          onChange={handleSearchChange}
-          onFocus={() => searchQuery.length >= 2 && suggestions.length > 0 && setShowSuggestions(true)}
-          onBlur={() => setTimeout(() => handleClickOutside(), 200)}
-        />
+        <SearchFilterRow>
+          <SearchInputWrapper>
+            <SearchIcon>
+              <FontAwesomeIcon icon={faSearch} />
+            </SearchIcon>
+            <SearchInput 
+              type="text" 
+              placeholder="Search programs, colleges, or descriptions" 
+              value={searchQuery}
+              onChange={handleSearchChange}
+              onFocus={() => searchQuery.length >= 2 && suggestions.length > 0 && setShowSuggestions(true)}
+              onBlur={() => setTimeout(() => handleClickOutside(), 200)}
+            />
+          </SearchInputWrapper>
+          
+          <FilterButton onClick={toggleFilters}>
+            <FontAwesomeIcon icon={faFilter} />
+            Filter {activeFilterCount > 0 && `(${activeFilterCount})`}
+          </FilterButton>
+        </SearchFilterRow>
         
         {showSuggestions && (
           <SuggestionsContainer>
@@ -812,6 +969,226 @@ const ProgramsPage: React.FC = () => {
             )}
           </SuggestionsContainer>
         )}
+        
+        {showFilters && (
+          <FiltersContainer>
+            <FilterHeader>
+              <FilterTitle>
+                <FontAwesomeIcon icon={faFilter} />
+                Filter & Sort Programs
+              </FilterTitle>
+              
+              {activeFilterCount > 0 && (
+                <ClearFiltersButton onClick={clearAllFilters}>
+                  <FontAwesomeIcon icon={faTimes} />
+                  Clear All Filters
+                </ClearFiltersButton>
+              )}
+            </FilterHeader>
+            
+            {/* Sort Options */}
+            <FilterGroup>
+              <FilterGroupTitle>
+                <FontAwesomeIcon icon={faSort} />
+                Sort By
+              </FilterGroupTitle>
+              <FilterSelect 
+                value={sortOption} 
+                onChange={handleSortChange}
+              >
+                <option value="default">Default</option>
+                <option value="name-asc">Name (A-Z)</option>
+                <option value="name-desc">Name (Z-A)</option>
+                <option value="level-asc">Level (Ascending)</option>
+                <option value="level-desc">Level (Descending)</option>
+                <option value="fee-asc">Fee (Ascending)</option>
+                <option value="fee-desc">Fee (Descending)</option>
+                <option value="rating-asc">Rating (Ascending)</option>
+                <option value="rating-desc">Rating (Descending)</option>
+              </FilterSelect>
+            </FilterGroup>
+            
+            {/* Tuition Range Filter */}
+            <RangeFilterGroup>
+              <FilterGroupTitle>
+                <FontAwesomeIcon icon={faDollarSign} />
+                Tuition Fee Range
+              </FilterGroupTitle>
+              <RangeInputs>
+                <RangeInput 
+                  type="number" 
+                  placeholder="Min" 
+                  min="0"
+                  value={filters.feeMin}
+                  onChange={handleFeeMinChange}
+                />
+                <span>-</span>
+                <RangeInput 
+                  type="number" 
+                  placeholder="Max" 
+                  min="0"
+                  value={filters.feeMax}
+                  onChange={handleFeeMaxChange}
+                />
+              </RangeInputs>
+            </RangeFilterGroup>
+            
+            {/* Country Filter */}
+            <FilterGroup>
+              <FilterGroupTitle>
+                <FontAwesomeIcon icon={faMapMarkerAlt} />
+                Country
+              </FilterGroupTitle>
+              <FilterSelect 
+                value={filters.country} 
+                onChange={(e) => handleFilterChange('country', e.target.value)}
+              >
+                <option value="">All Countries</option>
+                {filterOptions.countries.map(country => (
+                  <option key={country} value={country}>{country}</option>
+                ))}
+              </FilterSelect>
+            </FilterGroup>
+            
+            {/* Program Level/Type Filter */}
+            <FilterGroup>
+              <FilterGroupTitle>
+                <FontAwesomeIcon icon={faGraduationCap} />
+                Program Type
+              </FilterGroupTitle>
+              <FilterSelect 
+                value={filters.level} 
+                onChange={(e) => handleFilterChange('level', e.target.value)}
+              >
+                <option value="">All Types</option>
+                {filterOptions.levels.map(level => (
+                  <option key={level} value={level}>{level}</option>
+                ))}
+              </FilterSelect>
+            </FilterGroup>
+            
+            {/* Duration Filter */}
+            <FilterGroup>
+              <FilterGroupTitle>
+                <FontAwesomeIcon icon={faClock} />
+                Duration
+              </FilterGroupTitle>
+              <FilterSelect 
+                value={filters.duration} 
+                onChange={(e) => handleFilterChange('duration', e.target.value)}
+              >
+                <option value="">All Durations</option>
+                {filterOptions.durations.map(duration => (
+                  <option key={duration} value={duration}>{duration}</option>
+                ))}
+              </FilterSelect>
+            </FilterGroup>
+            
+            {/* University Filter */}
+            <FilterGroup>
+              <FilterGroupTitle>
+                <FontAwesomeIcon icon={faUniversity} />
+                University
+              </FilterGroupTitle>
+              <FilterSelect 
+                value={filters.university} 
+                onChange={handleUniversityChange}
+              >
+                <option value="">All Universities</option>
+                {filterOptions.universities.map(university => (
+                  <option key={university} value={university}>{university}</option>
+                ))}
+              </FilterSelect>
+            </FilterGroup>
+            
+            {/* Category Filter */}
+            <FilterGroup>
+              <FilterGroupTitle>
+                <FontAwesomeIcon icon={faTag} />
+                Category
+              </FilterGroupTitle>
+              <FilterSelect 
+                value={filters.category} 
+                onChange={(e) => handleFilterChange('category', e.target.value)}
+              >
+                <option value="">All Categories</option>
+                {filterOptions.categories.map(category => (
+                  <option key={category} value={category}>{category}</option>
+                ))}
+              </FilterSelect>
+            </FilterGroup>
+            
+            {/* Active Filters */}
+            {activeFilterCount > 0 && (
+              <ActiveFiltersContainer>
+                {filters.level && (
+                  <ActiveFilter>
+                    Program Type: {filters.level}
+                    <button onClick={() => clearFilter('level')}>
+                      <FontAwesomeIcon icon={faTimes} />
+                    </button>
+                  </ActiveFilter>
+                )}
+                
+                {filters.duration && (
+                  <ActiveFilter>
+                    Duration: {filters.duration}
+                    <button onClick={() => clearFilter('duration')}>
+                      <FontAwesomeIcon icon={faTimes} />
+                    </button>
+                  </ActiveFilter>
+                )}
+                
+                {filters.country && (
+                  <ActiveFilter>
+                    Country: {filters.country}
+                    <button onClick={() => clearFilter('country')}>
+                      <FontAwesomeIcon icon={faTimes} />
+                    </button>
+                  </ActiveFilter>
+                )}
+                
+                {filters.university && (
+                  <ActiveFilter>
+                    University: {filters.university}
+                    <button onClick={() => clearFilter('university')}>
+                      <FontAwesomeIcon icon={faTimes} />
+                    </button>
+                  </ActiveFilter>
+                )}
+                
+                {filters.category && (
+                  <ActiveFilter>
+                    Category: {filters.category}
+                    <button onClick={() => clearFilter('category')}>
+                      <FontAwesomeIcon icon={faTimes} />
+                    </button>
+                  </ActiveFilter>
+                )}
+                
+                {(filters.feeMin || filters.feeMax) && (
+                  <ActiveFilter>
+                    Fee: {filters.feeMin ? `$${filters.feeMin}` : '$0'} - {filters.feeMax ? `$${filters.feeMax}` : 'Any'}
+                    <button onClick={() => {
+                      clearFilter('feeMin');
+                      clearFilter('feeMax');
+                    }}>
+                      <FontAwesomeIcon icon={faTimes} />
+                    </button>
+                  </ActiveFilter>
+                )}
+              </ActiveFiltersContainer>
+            )}
+            
+            {/* Apply Button */}
+            <FilterButton 
+              style={{ width: '100%', marginTop: '1rem', justifyContent: 'center' }}
+              onClick={toggleFilters}
+            >
+              Apply Filters
+            </FilterButton>
+          </FiltersContainer>
+        )}
       </SearchContainer>
       
       <TabsContainer>
@@ -839,158 +1216,7 @@ const ProgramsPage: React.FC = () => {
         >
           Intake Offer
         </Tab>
-        
-        <div style={{ marginLeft: 'auto', display: 'flex', gap: '1rem', alignItems: 'center' }}>
-          <SortContainer>
-            <SortLabel>
-              <FontAwesomeIcon icon={faSort} style={{ marginRight: '0.25rem' }} />
-              Sort:
-            </SortLabel>
-            <FilterSelect 
-              value={sortOption} 
-              onChange={handleSortChange}
-            >
-              <option value="default">Default</option>
-              <option value="name-asc">Name (A-Z)</option>
-              <option value="name-desc">Name (Z-A)</option>
-              <option value="level-asc">Level (Ascending)</option>
-              <option value="level-desc">Level (Descending)</option>
-            </FilterSelect>
-          </SortContainer>
-          
-          <Tab 
-            active={showFilters} 
-            onClick={toggleFilters}
-          >
-            <FontAwesomeIcon icon={faFilter} style={{ marginRight: '0.25rem' }} />
-            Filters {activeFilterCount > 0 && `(${activeFilterCount})`}
-          </Tab>
-        </div>
       </TabsContainer>
-      
-      {showFilters && (
-        <FiltersContainer>
-          <FilterHeader>
-            <FilterTitle>
-              <FontAwesomeIcon icon={faFilter} />
-              Filter Programs
-            </FilterTitle>
-            
-            {activeFilterCount > 0 && (
-              <ClearFiltersButton onClick={clearAllFilters}>
-                <FontAwesomeIcon icon={faTimes} />
-                Clear All Filters
-              </ClearFiltersButton>
-            )}
-          </FilterHeader>
-          
-          <FilterOptions>
-            <FilterGroup>
-              <FilterGroupTitle>
-                <FontAwesomeIcon icon={faGraduationCap} />
-                Program Level
-              </FilterGroupTitle>
-              <FilterSelect 
-                value={filters.level} 
-                onChange={(e) => handleFilterChange('level', e.target.value)}
-              >
-                <option value="">All Levels</option>
-                {filterOptions.levels.map(level => (
-                  <option key={level} value={level}>{level}</option>
-                ))}
-              </FilterSelect>
-            </FilterGroup>
-            
-            <FilterGroup>
-              <FilterGroupTitle>
-                <FontAwesomeIcon icon={faClock} />
-                Duration
-              </FilterGroupTitle>
-              <FilterSelect 
-                value={filters.duration} 
-                onChange={(e) => handleFilterChange('duration', e.target.value)}
-              >
-                <option value="">All Durations</option>
-                {filterOptions.durations.map(duration => (
-                  <option key={duration} value={duration}>{duration}</option>
-                ))}
-              </FilterSelect>
-            </FilterGroup>
-            
-            <FilterGroup>
-              <FilterGroupTitle>
-                <FontAwesomeIcon icon={faMapMarkerAlt} />
-                Country
-              </FilterGroupTitle>
-              <FilterSelect 
-                value={filters.country} 
-                onChange={(e) => handleFilterChange('country', e.target.value)}
-              >
-                <option value="">All Countries</option>
-                {filterOptions.countries.map(country => (
-                  <option key={country} value={country}>{country}</option>
-                ))}
-              </FilterSelect>
-            </FilterGroup>
-            
-            <FilterGroup>
-              <FilterGroupTitle>
-                <FontAwesomeIcon icon={faTag} />
-                Category
-              </FilterGroupTitle>
-              <FilterSelect 
-                value={filters.category} 
-                onChange={(e) => handleFilterChange('category', e.target.value)}
-              >
-                <option value="">All Categories</option>
-                {filterOptions.categories.map(category => (
-                  <option key={category} value={category}>{category}</option>
-                ))}
-              </FilterSelect>
-            </FilterGroup>
-          </FilterOptions>
-          
-          {activeFilterCount > 0 && (
-            <ActiveFiltersContainer>
-              {filters.level && (
-                <ActiveFilter>
-                  Level: {filters.level}
-                  <button onClick={() => clearFilter('level')}>
-                    <FontAwesomeIcon icon={faTimes} />
-                  </button>
-                </ActiveFilter>
-              )}
-              
-              {filters.duration && (
-                <ActiveFilter>
-                  Duration: {filters.duration}
-                  <button onClick={() => clearFilter('duration')}>
-                    <FontAwesomeIcon icon={faTimes} />
-                  </button>
-                </ActiveFilter>
-              )}
-              
-              {filters.country && (
-                <ActiveFilter>
-                  Country: {filters.country}
-                  <button onClick={() => clearFilter('country')}>
-                    <FontAwesomeIcon icon={faTimes} />
-                  </button>
-                </ActiveFilter>
-              )}
-              
-              {filters.category && (
-                <ActiveFilter>
-                  Category: {filters.category}
-                  <button onClick={() => clearFilter('category')}>
-                    <FontAwesomeIcon icon={faTimes} />
-                  </button>
-                </ActiveFilter>
-              )}
-            </ActiveFiltersContainer>
-          )}
-        </FiltersContainer>
-      )}
       
       <ProgramsGrid>
         {getCurrentPagePrograms().length > 0 ? (
