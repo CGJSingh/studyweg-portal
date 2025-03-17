@@ -104,6 +104,7 @@ const Institution = styled.div`
   
   svg {
     color: #007BFF;
+    font-size: 1rem;
   }
 `;
 
@@ -117,6 +118,7 @@ const Location = styled.div`
   
   svg {
     color: #F33066;
+    font-size: 1rem;
   }
 `;
 
@@ -134,9 +136,11 @@ const Tag = styled.div`
   background-color: transparent;
   color: #0c3b5e;
   margin-bottom: 0.5rem;
+  font-size: 0.8rem;
   
   svg {
     color: #27B737;
+    font-size: 1rem;
   }
 `;
 
@@ -166,6 +170,7 @@ const Duration = styled.div`
 
   svg {
     color: #f39c12;
+    font-size: 1rem;
   }
 `;
 
@@ -178,6 +183,7 @@ const Rating = styled.div`
 
   svg {
     color: #f39c12;
+    font-size: 1rem;
   }
 `;
 
@@ -241,20 +247,20 @@ const ProgramCard: React.FC<ProgramCardProps> = ({ program }) => {
       </ImageContainer>
       <Content>
         <Institution>
-          <FontAwesomeIcon icon={faUniversity} size="sm" />
+          <FontAwesomeIcon icon={faUniversity} />
           {school || 'Institution not specified'}
         </Institution>
         
         {country && (
           <Location>
-            <FontAwesomeIcon icon={faMapMarkerAlt} size="sm" />
+            <FontAwesomeIcon icon={faMapMarkerAlt} />
             {country}
           </Location>
         )}
         
         {duration && (
           <Tag>
-            <FontAwesomeIcon icon={faClock} size="sm" />
+            <FontAwesomeIcon icon={faClock} />
             {duration}
           </Tag>
         )}
