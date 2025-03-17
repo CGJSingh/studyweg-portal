@@ -123,10 +123,11 @@ const Tag = styled.div`
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
-  background-color: #0c3b5e;
-  color: white;
+  background-color: transparent;
+  color: #0c3b5e;
   padding: 0.2rem 0.5rem;
-  border-radius: 4px;
+  border: 1px solid #0c3b5e;
+  border-radius: 20px;
   font-size: 0.7rem;
   font-weight: 500;
   
