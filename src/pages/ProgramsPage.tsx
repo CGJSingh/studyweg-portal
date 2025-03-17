@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
-import { fetchPrograms } from '../services/api';
+import { fetchPrograms, clearProgramsCache } from '../services/api';
 import { Program } from '../types';
 import ProgramCard from '../components/ProgramCard';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -367,7 +367,9 @@ const ProgramsPage: React.FC = () => {
     const loadPrograms = async () => {
       try {
         setLoading(true);
+        console.log('Fetching programs for page:', currentPage);
         const result = await fetchPrograms(currentPage);
+        console.log('Received programs:', result.programs.length);
         setPrograms(result.programs);
         setFilteredPrograms(result.programs);
         setTotalPages(result.totalPages);
@@ -377,9 +379,6 @@ const ProgramsPage: React.FC = () => {
         const durations = new Set<string>();
         const countries = new Set<string>();
         const categories = new Set<string>();
-        
-        // Log for debugging
-        console.log('Total programs fetched:', result.programs.length);
         
         result.programs.forEach(program => {
           // Extract levels
@@ -545,16 +544,19 @@ const ProgramsPage: React.FC = () => {
 
   // Function to handle page change
   const handlePageChange = (page: number) => {
+    // Clear cache to ensure fresh data
+    clearProgramsCache();
     setCurrentPage(page);
     setLoading(true); // Set loading to true when changing pages
     window.scrollTo(0, 0); // Scroll to top when changing page
   };
 
-  // Get current programs for the current page (for client-side pagination when filtering)
+  // Get current programs for the current page - we'll directly use the filtered programs
+  // instead of slicing, since the API is already returning paginated data
   const getCurrentPagePrograms = () => {
-    const indexOfLastProgram = currentPage * programsPerPage;
-    const indexOfFirstProgram = indexOfLastProgram - programsPerPage;
-    return filteredPrograms.slice(indexOfFirstProgram, indexOfLastProgram);
+    // When using API pagination, simply return the filtered programs
+    // since the API already returns the right page
+    return filteredPrograms;
   };
 
   // Calculate page numbers for pagination display
@@ -817,7 +819,7 @@ const ProgramsPage: React.FC = () => {
         <PaginationContainer>
           <PageButton 
             onClick={() => handlePageChange(currentPage - 1)}
-            disabled={currentPage === 1}
+            disabled={currentPage === 1 || loading}
           >
             <FontAwesomeIcon icon={faChevronLeft} />
           </PageButton>
@@ -827,6 +829,7 @@ const ProgramsPage: React.FC = () => {
               key={number}
               active={number === currentPage}
               onClick={() => handlePageChange(number)}
+              disabled={loading}
             >
               {number}
             </PageButton>
@@ -834,13 +837,14 @@ const ProgramsPage: React.FC = () => {
           
           <PageButton 
             onClick={() => handlePageChange(currentPage + 1)}
-            disabled={currentPage >= totalPages}
+            disabled={currentPage >= totalPages || loading}
           >
             <FontAwesomeIcon icon={faChevronRight} />
           </PageButton>
           
           <PageInfo>
             Page {currentPage} of {totalPages}
+            {loading && <span style={{ marginLeft: '10px', color: '#0066cc' }}>Loading...</span>}
           </PageInfo>
         </PaginationContainer>
       )}
