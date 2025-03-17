@@ -16,7 +16,7 @@ const GlobalStyles = createGlobalStyle`
 
   a {
     text-decoration: none;
-    color: #f39c12;
+    color: #0c3b5e;
   }
 
   button {
@@ -32,6 +32,7 @@ const GlobalStyles = createGlobalStyle`
     margin-bottom: 1rem;
     font-weight: 600;
     line-height: 1.2;
+    color: #0c3b5e;
   }
 
   p {

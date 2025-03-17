@@ -30,7 +30,7 @@ const FooterSection = styled.div`
 
 const FooterTitle = styled.h3`
   font-size: 1.2rem;
-  color: #333;
+  color: #0c3b5e;
   margin-bottom: 1.5rem;
   position: relative;
   

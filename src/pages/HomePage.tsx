@@ -15,7 +15,7 @@ const HomeContainer = styled.div`
 const Title = styled.h1`
   font-size: 2.5rem;
   margin-bottom: 1.5rem;
-  color: #333;
+  color: #0c3b5e;
 `;
 
 const Subtitle = styled.p`

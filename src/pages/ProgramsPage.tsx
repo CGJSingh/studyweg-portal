@@ -186,7 +186,7 @@ const FilterHeader = styled.div`
 
 const FilterTitle = styled.h3`
   font-size: 1rem;
-  color: #2c3e50;
+  color: #0c3b5e;
   margin: 0;
   display: flex;
   align-items: center;
@@ -208,7 +208,7 @@ const FilterGroup = styled.div`
 const FilterGroupTitle = styled.div`
   font-weight: 600;
   font-size: 0.9rem;
-  color: #34495e;
+  color: #0c3b5e;
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -282,7 +282,7 @@ const SortContainer = styled.div`
 
 const SortLabel = styled.span`
   font-size: 0.9rem;
-  color: #34495e;
+  color: #0c3b5e;
 `;
 
 const PaginationContainer = styled.div`

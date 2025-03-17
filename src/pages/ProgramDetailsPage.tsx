@@ -172,7 +172,7 @@ const ContentSection = styled.div`
 
 const SectionTitle = styled.h2`
   font-size: 1.5rem;
-  color: #2c3e50;
+  color: #0c3b5e;
   margin: 0 0 1.5rem 0;
   padding-bottom: 0.75rem;
   border-bottom: 1px solid #eee;
@@ -210,7 +210,7 @@ const InfoValue = styled.div`
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  color: #2c3e50;
+  color: #0c3b5e;
   font-weight: 500;
   
   svg {
@@ -233,13 +233,13 @@ const Tab = styled.button<TabProps>`
   background: none;
   border: none;
   border-bottom: 2px solid ${props => props.active ? '#f39c12' : 'transparent'};
-  color: ${props => props.active ? '#f39c12' : '#7f8c8d'};
+  color: ${props => props.active ? '#0c3b5e' : '#7f8c8d'};
   font-weight: ${props => props.active ? '600' : '400'};
   font-size: 1rem;
   cursor: pointer;
   
   &:hover {
-    color: #f39c12;
+    color: #0c3b5e;
   }
 `;
 
@@ -282,7 +282,7 @@ const SidebarCard = styled.div`
 
 const SidebarTitle = styled.h3`
   font-size: 1.2rem;
-  color: #2c3e50;
+  color: #0c3b5e;
   margin: 0 0 1.5rem 0;
   padding-bottom: 0.75rem;
   border-bottom: 1px solid #eee;
@@ -390,7 +390,7 @@ const ActionButton = styled.a`
   gap: 0.5rem;
   width: 100%;
   padding: 1rem;
-  background-color: #f39c12;
+  background-color: #0c3b5e;
   color: white;
   text-align: center;
   text-decoration: none;
@@ -400,7 +400,7 @@ const ActionButton = styled.a`
   transition: background-color 0.2s;
   
   &:hover {
-    background-color: #e08e0b;
+    background-color: #092b47;
   }
 `;
 
@@ -688,14 +688,14 @@ const HighlightIcon = styled.div`
 // Function to get gradient colors for different detail types
 const getDetailGradient = (type: string) => {
   switch (type) {
-    case 'country':
-      return 'linear-gradient(135deg, #F33066, #D32057)'; // Pink/Red
-    case 'duration':
-      return 'linear-gradient(135deg, #27B737, #1C9E2A)'; // Green
-    case 'level':
-      return 'linear-gradient(135deg, #007BFF, #0062CC)'; // Blue
+    case 'Technology':
+      return 'linear-gradient(135deg, #0c3b5e, #1a5486)';
+    case 'Business':
+      return 'linear-gradient(135deg, #0c3b5e, #f39c12)';
+    case 'Healthcare':
+      return 'linear-gradient(135deg, #0c3b5e, #1a5486)';
     default:
-      return 'linear-gradient(135deg, #3498db, #8e44ad)';
+      return 'linear-gradient(135deg, #0c3b5e, #1a5486)';
   }
 };
 
@@ -726,26 +726,13 @@ const getCategoryIcon = (category: string) => {
 
 // Function to get a gradient color based on category
 const getCategoryGradient = (category: string) => {
-  const categoryLower = category.toLowerCase();
-  
-  if (categoryLower.includes('business') || categoryLower.includes('management') || categoryLower.includes('mba')) {
-    return 'linear-gradient(135deg, #1abc9c, #2980b9)';
-  } else if (categoryLower.includes('computer') || categoryLower.includes('it') || categoryLower.includes('tech')) {
-    return 'linear-gradient(135deg, #3498db, #8e44ad)';
-  } else if (categoryLower.includes('engineering')) {
-    return 'linear-gradient(135deg, #f1c40f, #e67e22)';
-  } else if (categoryLower.includes('health') || categoryLower.includes('medicine') || categoryLower.includes('nursing')) {
-    return 'linear-gradient(135deg, #2ecc71, #16a085)';
-  } else if (categoryLower.includes('art') || categoryLower.includes('design')) {
-    return 'linear-gradient(135deg, #e74c3c, #c0392b)';
-  } else if (categoryLower.includes('science')) {
-    return 'linear-gradient(135deg, #9b59b6, #8e44ad)';
-  } else if (categoryLower.includes('law') || categoryLower.includes('legal')) {
-    return 'linear-gradient(135deg, #34495e, #2c3e50)';
-  } else if (categoryLower.includes('education') || categoryLower.includes('teaching')) {
-    return 'linear-gradient(135deg, #3498db, #2980b9)';
-  } else {
-    return 'linear-gradient(135deg, #3498db, #8e44ad)';
+  switch (category.toLowerCase()) {
+    case 'technology':
+      return 'linear-gradient(135deg, #0c3b5e, #1a5486)';
+    case 'business':
+      return 'linear-gradient(135deg, #0c3b5e, #f39c12)';
+    default:
+      return 'linear-gradient(135deg, #0c3b5e, #1a5486)';
   }
 };
 

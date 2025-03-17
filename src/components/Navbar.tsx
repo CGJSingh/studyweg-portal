@@ -26,7 +26,7 @@ const NavbarContent = styled.div`
 const Logo = styled(Link)`
   font-size: 1.5rem;
   font-weight: 700;
-  color: #f39c12;
+  color: #0c3b5e;
   text-decoration: none;
   display: flex;
   align-items: center;
@@ -147,12 +147,12 @@ const LoginButton = styled(Link)`
   padding: 0.5rem 1rem;
   border-radius: 5px;
   font-weight: 500;
-  color: #3f51b5;
+  color: #0c3b5e;
   text-decoration: none;
   transition: all 0.3s ease;
   
   &:hover {
-    background-color: rgba(63, 81, 181, 0.1);
+    background-color: rgba(12, 59, 94, 0.1);
   }
   
   @media (max-width: 768px) {
@@ -164,14 +164,14 @@ const LoginButton = styled(Link)`
 const SignupButton = styled(Link)`
   padding: 0.5rem 1rem;
   border-radius: 5px;
-  background-color: #3f51b5;
+  background-color: #0c3b5e;
   color: white;
   text-decoration: none;
   font-weight: 500;
   transition: background-color 0.3s ease;
   
   &:hover {
-    background-color: #303f9f;
+    background-color: #092b47;
   }
   
   @media (max-width: 768px) {
@@ -245,7 +245,7 @@ const DemoToggle = styled.button`
   position: fixed;
   bottom: 20px;
   right: 20px;
-  background-color: #3f51b5;
+  background-color: #0c3b5e;
   color: white;
   border: none;
   border-radius: 5px;
@@ -256,7 +256,7 @@ const DemoToggle = styled.button`
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
   
   &:hover {
-    background-color: #303f9f;
+    background-color: #092b47;
   }
 `;
 

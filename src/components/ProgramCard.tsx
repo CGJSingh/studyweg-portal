@@ -77,7 +77,7 @@ const BookmarkButton = styled.button`
   cursor: pointer;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   z-index: 1;
-  color: #3498db;
+  color: #0c3b5e;
   
   &:hover {
     background: #f8f8f8;
@@ -96,7 +96,7 @@ const Institution = styled.div`
   align-items: center;
   gap: 0.5rem;
   font-weight: 600;
-  color: #2c3e50;
+  color: #0c3b5e;
   margin-bottom: 0.5rem;
   font-size: 0.9rem;
 `;
@@ -131,7 +131,7 @@ const Tag = styled.div`
 
 const ProgramTitle = styled.h3`
   font-size: 1rem;
-  color: #2c3e50;
+  color: #0c3b5e;
   margin: 0 0 0.7rem 0;
   line-height: 1.4;
   font-weight: 500;
