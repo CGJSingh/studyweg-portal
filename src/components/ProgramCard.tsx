@@ -39,7 +39,7 @@ const Badge = styled.div`
   position: absolute;
   top: 10px;
   left: 10px;
-  background-color: #f39c12;
+  background-color: #0c3b5e;
   color: white;
   padding: 0.3rem 0.8rem;
   border-radius: 4px;
@@ -78,9 +78,11 @@ const BookmarkButton = styled.button`
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   z-index: 1;
   color: #0c3b5e;
+  transition: color 0.2s ease;
   
   &:hover {
     background: #f8f8f8;
+    color: #f39c12;
   }
 `;
 
@@ -121,12 +123,16 @@ const Tag = styled.div`
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
-  background-color: #f0f7ff;
-  color: #f39c12;
+  background-color: #0c3b5e;
+  color: white;
   padding: 0.2rem 0.5rem;
   border-radius: 4px;
   font-size: 0.7rem;
   font-weight: 500;
+  
+  svg {
+    color: #f39c12;
+  }
 `;
 
 const ProgramTitle = styled.h3`
@@ -150,11 +156,11 @@ const Duration = styled.div`
   display: flex;
   align-items: center;
   gap: 0.25rem;
-  color: #7f8c8d;
+  color: #0c3b5e;
   font-size: 0.8rem;
 
   svg {
-    color: #7f8c8d;
+    color: #f39c12;
   }
 `;
 
