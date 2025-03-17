@@ -757,17 +757,6 @@ const ProgramsPage: React.FC = () => {
 
   return (
     <PageContainer>
-      <HeaderContent>
-        <Title>Programs</Title>
-        <UserProfile>
-          <Avatar>AJ</Avatar>
-          <UserInfo>
-            <UserName>Andrew Johnson</UserName>
-            <UserEmail>andrew.johnson@gmail.com</UserEmail>
-          </UserInfo>
-        </UserProfile>
-      </HeaderContent>
-      
       <SearchContainer>
         <SearchIcon>
           <FontAwesomeIcon icon={faSearch} />
