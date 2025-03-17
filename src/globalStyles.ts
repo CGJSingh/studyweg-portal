@@ -16,7 +16,7 @@ const GlobalStyles = createGlobalStyle`
 
   a {
     text-decoration: none;
-    color: #0066cc;
+    color: #f39c12;
   }
 
   button {

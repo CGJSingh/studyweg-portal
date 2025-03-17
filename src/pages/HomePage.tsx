@@ -28,7 +28,7 @@ const Subtitle = styled.p`
 const LoadingSpinner = styled.div`
   border: 4px solid rgba(0, 0, 0, 0.1);
   border-radius: 50%;
-  border-top: 4px solid #0066cc;
+  border-top: 4px solid #f39c12;
   width: 40px;
   height: 40px;
   animation: spin 1s linear infinite;

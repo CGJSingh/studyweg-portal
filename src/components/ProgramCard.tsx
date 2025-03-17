@@ -122,7 +122,7 @@ const Tag = styled.div`
   align-items: center;
   gap: 0.25rem;
   background-color: #f0f7ff;
-  color: #0066cc;
+  color: #f39c12;
   padding: 0.2rem 0.5rem;
   border-radius: 4px;
   font-size: 0.7rem;
@@ -167,6 +167,22 @@ const Rating = styled.div`
 
   svg {
     color: #f39c12;
+  }
+`;
+
+const ApplyButton = styled.button`
+  padding: 10px 16px;
+  border: none;
+  border-radius: 4px;
+  background-color: #f39c12;
+  color: white;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  
+  &:hover {
+    background-color: #e08e0b;
   }
 `;
 

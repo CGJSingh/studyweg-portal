@@ -181,7 +181,7 @@ const SectionTitle = styled.h2`
   gap: 0.75rem;
   
   svg {
-    color: #3498db;
+    color: #f39c12;
   }
 `;
 
@@ -214,7 +214,7 @@ const InfoValue = styled.div`
   font-weight: 500;
   
   svg {
-    color: #3498db;
+    color: #f39c12;
   }
 `;
 
@@ -232,14 +232,14 @@ const Tab = styled.button<TabProps>`
   padding: 1rem 1.5rem;
   background: none;
   border: none;
-  border-bottom: 2px solid ${props => props.active ? '#3498db' : 'transparent'};
-  color: ${props => props.active ? '#3498db' : '#7f8c8d'};
+  border-bottom: 2px solid ${props => props.active ? '#f39c12' : 'transparent'};
+  color: ${props => props.active ? '#f39c12' : '#7f8c8d'};
   font-weight: ${props => props.active ? '600' : '400'};
   font-size: 1rem;
   cursor: pointer;
   
   &:hover {
-    color: #3498db;
+    color: #f39c12;
   }
 `;
 
@@ -291,7 +291,7 @@ const SidebarTitle = styled.h3`
   gap: 0.5rem;
   
   svg {
-    color: #3498db;
+    color: #f39c12;
   }
 `;
 
@@ -366,7 +366,7 @@ const RequirementIcon = styled.div`
   justify-content: center;
   
   svg {
-    color: #3498db;
+    color: #f39c12;
     font-size: 1rem;
   }
 `;
@@ -390,7 +390,7 @@ const ActionButton = styled.a`
   gap: 0.5rem;
   width: 100%;
   padding: 1rem;
-  background-color: #3498db;
+  background-color: #f39c12;
   color: white;
   text-align: center;
   text-decoration: none;
@@ -400,7 +400,7 @@ const ActionButton = styled.a`
   transition: background-color 0.2s;
   
   &:hover {
-    background-color: #2980b9;
+    background-color: #e08e0b;
   }
 `;
 

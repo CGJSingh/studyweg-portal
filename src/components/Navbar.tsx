@@ -26,14 +26,15 @@ const NavbarContent = styled.div`
 const Logo = styled(Link)`
   font-size: 1.5rem;
   font-weight: 700;
-  color: #0066cc;
+  color: #f39c12;
   text-decoration: none;
   display: flex;
   align-items: center;
   
   img {
     height: 40px;
-    margin-right: 0.5rem;
+    width: auto;
+    object-fit: contain;
   }
 `;
 
@@ -61,7 +62,7 @@ const NavLinks = styled.div<{ isOpen: boolean }>`
 
 const NavLink = styled(Link)<{ isActive: boolean }>`
   margin: 0 1rem;
-  color: ${props => props.isActive ? '#0066cc' : '#333'};
+  color: ${props => props.isActive ? '#f39c12' : '#333'};
   text-decoration: none;
   font-weight: ${props => props.isActive ? '600' : '500'};
   position: relative;
@@ -73,7 +74,7 @@ const NavLink = styled(Link)<{ isActive: boolean }>`
     left: 0;
     width: ${props => props.isActive ? '100%' : '0'};
     height: 2px;
-    background-color: #0066cc;
+    background-color: #f39c12;
     transition: width 0.3s ease;
   }
   
@@ -316,7 +317,10 @@ const Navbar: React.FC = () => {
       <NavbarContainer isScrolled={isScrolled}>
         <NavbarContent>
           <Logo to="/">
-            StudyWeg
+            <img 
+              src="https://test.studyweg.ca/wp-content/uploads/2024/06/StudyWeg-Logo-3-e1720449945770.png" 
+              alt="StudyWeg Logo" 
+            />
           </Logo>
           
           <MobileMenuButton onClick={toggleMenu}>

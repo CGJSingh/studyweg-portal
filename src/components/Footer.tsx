@@ -41,7 +41,7 @@ const FooterTitle = styled.h3`
     left: 0;
     width: 50px;
     height: 2px;
-    background-color: #0066cc;
+    background-color: #f39c12;
   }
 `;
 
@@ -52,7 +52,7 @@ const FooterLink = styled(Link)`
   transition: color 0.2s ease;
   
   &:hover {
-    color: #0066cc;
+    color: #f39c12;
   }
 `;
 
@@ -74,7 +74,7 @@ const SocialLink = styled.a`
   transition: color 0.2s ease;
   
   &:hover {
-    color: #0066cc;
+    color: #f39c12;
   }
 `;
 
@@ -106,7 +106,7 @@ const BottomLink = styled(Link)`
   text-decoration: none;
   
   &:hover {
-    color: #0066cc;
+    color: #f39c12;
     text-decoration: underline;
   }
 `;

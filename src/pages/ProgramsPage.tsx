@@ -111,8 +111,8 @@ const SearchInput = styled.input`
   
   &:focus {
     outline: none;
-    border-color: #0066cc;
-    box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.2);
+    border-color: #f39c12;
+    box-shadow: 0 0 0 2px rgba(243, 156, 18, 0.2);
   }
 `;
 
@@ -126,15 +126,15 @@ const Tab = styled.button<{ active: boolean }>`
   padding: 0.75rem 1.5rem;
   background: none;
   border: none;
-  border-bottom: 2px solid ${props => props.active ? '#0066cc' : 'transparent'};
-  color: ${props => props.active ? '#0066cc' : '#666'};
+  border-bottom: 2px solid ${props => props.active ? '#f39c12' : 'transparent'};
+  color: ${props => props.active ? '#f39c12' : '#666'};
   font-weight: ${props => props.active ? '600' : '400'};
   font-size: 0.9rem;
   cursor: pointer;
   transition: all 0.2s;
   
   &:hover {
-    color: #0066cc;
+    color: #f39c12;
   }
 `;
 
@@ -223,7 +223,7 @@ const FilterSelect = styled.select`
   
   &:focus {
     outline: none;
-    border-color: #0066cc;
+    border-color: #f39c12;
   }
 `;
 
@@ -239,7 +239,7 @@ const ActiveFilter = styled.div`
   align-items: center;
   gap: 0.25rem;
   background-color: #e1f0fa;
-  color: #0066cc;
+  color: #f39c12;
   padding: 0.4rem 0.75rem;
   border-radius: 20px;
   font-size: 0.75rem;
@@ -251,7 +251,7 @@ const ActiveFilter = styled.div`
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #0066cc;
+    color: #f39c12;
     font-size: 0.8rem;
     padding: 0;
     margin-left: 0.25rem;
@@ -295,15 +295,15 @@ const PaginationContainer = styled.div`
 
 const PageButton = styled.button<{ active?: boolean }>`
   padding: 0.5rem 0.8rem;
-  border: 1px solid ${props => props.active ? '#0066cc' : '#ddd'};
-  background-color: ${props => props.active ? '#0066cc' : 'white'};
+  border: 1px solid ${props => props.active ? '#f39c12' : '#ddd'};
+  background-color: ${props => props.active ? '#f39c12' : 'white'};
   color: ${props => props.active ? 'white' : '#333'};
   border-radius: 4px;
   cursor: pointer;
   font-weight: ${props => props.active ? '600' : 'normal'};
   
   &:hover {
-    background-color: ${props => props.active ? '#0066cc' : '#f7f7f7'};
+    background-color: ${props => props.active ? '#f39c12' : '#f7f7f7'};
   }
   
   &:disabled {
@@ -350,7 +350,7 @@ const SuggestionItem = styled.div`
 
 const SuggestionHighlight = styled.span`
   font-weight: 600;
-  color: #0066cc;
+  color: #f39c12;
 `;
 
 const SuggestionCategory = styled.span`
@@ -1045,7 +1045,7 @@ const ProgramsPage: React.FC = () => {
           
           <PageInfo>
             Page {currentPage} of {totalPages}
-            {loading && <span style={{ marginLeft: '10px', color: '#0066cc' }}>Loading...</span>}
+            {loading && <span style={{ marginLeft: '10px', color: '#f39c12' }}>Loading...</span>}
           </PageInfo>
         </PaginationContainer>
       )}
