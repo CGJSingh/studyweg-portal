@@ -1,0 +1,256 @@
+Fetched 100 programs
+
+=== COUNTRIES ===
+Finland
+France
+Ireland
+Italy
+
+Total countries: 4
+
+=== UNIVERSITIES ===
+HEC Paris
+IED Istituto Europeo di Design
+KEDGE Business School
+Paris School of Business
+Paris Sciences et Lettres University
+The Florence Institute
+University of Galway
+University of Limerick
+University of Milan
+University of Tampere
+University of Turku
+
+Total universities: 11
+
+=== PROGRAMS BY COUNTRY ===
+
+Finland (18 programs):
+- Bachelor’s degree programme in Information technology for Cyber Security and Data Science, in partnership with Hue University (Vietnam)
+- Computing and Electrical Engineering, Science and Engineering
+- Socially Sustainable Societies
+- Administrative Sciences, Sustainable Urban Development
+- Doctoral Programme in Business and Technology Management
+- Doctoral Programme of Education and Society
+- Doctoral Programme in Engineering Sciences
+- Doctoral Programme of Humans and Technologies
+- Master's Degree Programme in Information and Communication Technology: Cryptography
+- Master's Degree Programme in Health Technology
+- Master's Degree Programme in Food Development
+- Master's Degree Programme in Public Mental Health
+- Master's Degree Programme in Human Neuroscience
+- Master’s Degree Programme in Drug Discovery and Development
+- Master's Degree Programme in Biomedical Imaging
+- Master's Degree Programme in Education and Learning
+- Master's Degree Programme in Global Innovation Management
+- Master's Degree Programme in Futures Studies
+
+France (48 programs):
+- Sustainability sciences
+- Data Science, Arts and Cultures track
+- Economics, Society and Law track
+- Humanities & Society track
+- Science track
+- MSc Digital Marketing & Sales
+- International Bachelor Degree in Business Administration
+- Kedge Bachelor in Management
+- International BBA
+- Doctorate of Business Administration
+- Master of Business Administration
+- Master in International Business
+- Master in Business Consulting
+- Master in Entrepreneurship & Business Development
+- Master in Digital Business
+- Marketing & Data
+- Master in Luxury Brand Management
+- Masters in Purchasing & Supply Chain
+- Human Resources Management
+- Master in Data Management
+- Master in Business Engineering
+- Master in Financial Risk Management
+- Master in Corporate Finance
+- Master in Wealth Management
+- Master in Accounting, Consulting & Auditing
+- Master in Auditing & Management Control
+- Bachelor Tech for Management
+- International Bachelor in Management in Paris
+- MSc Data Management in Paris
+- MSc in Supply Chain Management
+- MSc in Marketing Analytics & Data Intelligence
+- MSc in Luxury & Fashion Management
+- MSc - International Management & Business Development
+- MSc in International Finance
+- MSc Hospitality Management
+- MSc in Arts & Cultural Management
+- BACHELOR OF ARTS & SCIENCE IN DATA, SOCIETY & ORGANISATIONS - HEC-BOCCONI
+- Master in Management & Public Affairs HEC - FU BERLIN
+- M2M HEC-YALE
+- Master in Management
+- Master of Science X - HEC Entrepreneurs
+- Master of Science Data Science & AI for Business
+- Master in Sustainability and Social Innovation
+- Master in Strategic Management
+- Master in Marketing
+- Master in Economics & Finance
+- Master in Accounting, Finance & Management
+- Master in International Finance
+
+Ireland (21 programs):
+- Community Wellness, Empowerment, Leadership and Life skills (CWELL) - Diploma
+- Communications and Digital Public Relations for Enterprise - Professional Diploma
+- Economics and Public Policy - Postgraduate Diploma
+- Equality, Diversity and Inclusion - Graduate Diploma
+- Functional Foods and Product Development - Postgraduate Diploma
+- Cognitive Robotics - Professional Diploma - UL@Work
+- Mathematics for Teaching (Level 8) - Professional Diploma
+- Climate Adaptation and Sustainability - Professional Diploma
+- Software Development - Higher Diploma
+- Chemical Engineering - Graduate Diploma
+- Artificial Intelligence in Finance - Graduate Diploma
+- Strategic Leadership
+- Artificial Intelligence for Computer Vision - Professional Diploma - UL@Work
+- Supply Chain Associate - Diploma (Apprenticeship)
+- Advanced Practice (Nursing) - Postgraduate Diploma
+- Sustainable Work - Professional Diploma
+- Transferable Skills - Professional Diploma
+- Advanced Practice (Midwifery) - Postgraduate Diploma
+- Foundation Course in Science, Technology, and Engineering
+- Diploma in Scientific Studies (Earth & Ocean Sciences)
+- Diploma in Critical Business Skills
+
+Italy (12 programs):
+- Diploma in Visual Arts
+- Diploma of Interior Design
+- Diploma of Graphic Design
+- Diploma in Graphic Design
+- Future Advertising
+- Image, Style Design and Fashion Communication
+- Fashion Marketing and Communication Management
+- Fashion Business
+- PhD in Clinical Research
+- PhD in Chemistry
+- PhD in Veterinary and Animal Science
+- Biomedical Omics (BO)
+
+=== PROGRAMS BY UNIVERSITY ===
+
+HEC Paris (12 programs):
+- BACHELOR OF ARTS & SCIENCE IN DATA, SOCIETY & ORGANISATIONS - HEC-BOCCONI
+- Master in Management & Public Affairs HEC - FU BERLIN
+- M2M HEC-YALE
+- Master in Management
+- Master of Science X - HEC Entrepreneurs
+- Master of Science Data Science & AI for Business
+- Master in Sustainability and Social Innovation
+- Master in Strategic Management
+- Master in Marketing
+- Master in Economics & Finance
+- Master in Accounting, Finance & Management
+- Master in International Finance
+
+IED Istituto Europeo di Design (5 programs):
+- Diploma in Graphic Design
+- Future Advertising
+- Image, Style Design and Fashion Communication
+- Fashion Marketing and Communication Management
+- Fashion Business
+
+KEDGE Business School (4 programs):
+- MSc Digital Marketing & Sales
+- International Bachelor Degree in Business Administration
+- Kedge Bachelor in Management
+- International BBA
+
+Paris School of Business (27 programs):
+- Doctorate of Business Administration
+- Master of Business Administration
+- Master in International Business
+- Master in Business Consulting
+- Master in Entrepreneurship & Business Development
+- Master in Digital Business
+- Marketing & Data
+- Master in Luxury Brand Management
+- Masters in Purchasing & Supply Chain
+- Human Resources Management
+- Master in Data Management
+- Master in Business Engineering
+- Master in Financial Risk Management
+- Master in Corporate Finance
+- Master in Wealth Management
+- Master in Accounting, Consulting & Auditing
+- Master in Auditing & Management Control
+- Bachelor Tech for Management
+- International Bachelor in Management in Paris
+- MSc Data Management in Paris
+- MSc in Supply Chain Management
+- MSc in Marketing Analytics & Data Intelligence
+- MSc in Luxury & Fashion Management
+- MSc - International Management & Business Development
+- MSc in International Finance
+- MSc Hospitality Management
+- MSc in Arts & Cultural Management
+
+Paris Sciences et Lettres University (5 programs):
+- Sustainability sciences
+- Data Science, Arts and Cultures track
+- Economics, Society and Law track
+- Humanities & Society track
+- Science track
+
+The Florence Institute (3 programs):
+- Diploma in Visual Arts
+- Diploma of Interior Design
+- Diploma of Graphic Design
+
+University of Galway (3 programs):
+- Foundation Course in Science, Technology, and Engineering
+- Diploma in Scientific Studies (Earth & Ocean Sciences)
+- Diploma in Critical Business Skills
+
+University of Limerick (18 programs):
+- Community Wellness, Empowerment, Leadership and Life skills (CWELL) - Diploma
+- Communications and Digital Public Relations for Enterprise - Professional Diploma
+- Economics and Public Policy - Postgraduate Diploma
+- Equality, Diversity and Inclusion - Graduate Diploma
+- Functional Foods and Product Development - Postgraduate Diploma
+- Cognitive Robotics - Professional Diploma - UL@Work
+- Mathematics for Teaching (Level 8) - Professional Diploma
+- Climate Adaptation and Sustainability - Professional Diploma
+- Software Development - Higher Diploma
+- Chemical Engineering - Graduate Diploma
+- Artificial Intelligence in Finance - Graduate Diploma
+- Strategic Leadership
+- Artificial Intelligence for Computer Vision - Professional Diploma - UL@Work
+- Supply Chain Associate - Diploma (Apprenticeship)
+- Advanced Practice (Nursing) - Postgraduate Diploma
+- Sustainable Work - Professional Diploma
+- Transferable Skills - Professional Diploma
+- Advanced Practice (Midwifery) - Postgraduate Diploma
+
+University of Milan (4 programs):
+- PhD in Clinical Research
+- PhD in Chemistry
+- PhD in Veterinary and Animal Science
+- Biomedical Omics (BO)
+
+University of Tampere (7 programs):
+- Computing and Electrical Engineering, Science and Engineering
+- Socially Sustainable Societies
+- Administrative Sciences, Sustainable Urban Development
+- Doctoral Programme in Business and Technology Management
+- Doctoral Programme of Education and Society
+- Doctoral Programme in Engineering Sciences
+- Doctoral Programme of Humans and Technologies
+
+University of Turku (11 programs):
+- Bachelor’s degree programme in Information technology for Cyber Security and Data Science, in partnership with Hue University (Vietnam)
+- Master's Degree Programme in Information and Communication Technology: Cryptography
+- Master's Degree Programme in Health Technology
+- Master's Degree Programme in Food Development
+- Master's Degree Programme in Public Mental Health
+- Master's Degree Programme in Human Neuroscience
+- Master’s Degree Programme in Drug Discovery and Development
+- Master's Degree Programme in Biomedical Imaging
+- Master's Degree Programme in Education and Learning
+- Master's Degree Programme in Global Innovation Management
+- Master's Degree Programme in Futures Studies

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
-import { fetchPrograms, clearProgramsCache } from '../services/api';
+import { fetchPrograms, clearProgramsCache, fetchAllPrograms } from '../services/api';
 import { Program } from '../types';
 import ProgramCard from '../components/ProgramCard';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -586,20 +586,33 @@ const ProgramsPage: React.FC = () => {
       try {
         setLoading(true);
         console.log('Fetching programs for page:', currentPage);
+        
+        // First, fetch the paginated data for display
         const result = await fetchPrograms(currentPage);
         console.log('Received programs:', result.programs.length);
+        
+        // Debug - check structure of the first program
+        if (result.programs.length > 0) {
+          console.log('First program structure:', JSON.stringify(result.programs[0], null, 2));
+        }
+        
         setPrograms(result.programs);
         setFilteredPrograms(result.programs);
         setTotalPages(result.totalPages);
         
-        // Extract filter options
+        // Then, fetch all programs to extract comprehensive filter options
+        // This ensures we have all possible filter values
+        const allPrograms = await fetchAllPrograms();
+        console.log('Fetched all programs for filters:', allPrograms.length);
+        
+        // Extract filter options from all programs
         const levels = new Set<string>();
         const durations = new Set<string>();
         const countries = new Set<string>();
         const categories = new Set<string>();
         const universities = new Set<string>();
         
-        result.programs.forEach(program => {
+        allPrograms.forEach(program => {
           // Extract levels
           const level = program.attributes?.find(attr => attr.name === "Program Level")?.options[0];
           if (level) levels.add(level);
@@ -611,11 +624,33 @@ const ProgramsPage: React.FC = () => {
           // Extract countries
           if (program.institution?.location) {
             countries.add(program.institution.location);
+            console.log('Added country:', program.institution.location);
+          } else {
+            // Try to find location from meta_data if institution object is not available
+            const locationMeta = program.meta_data?.find(meta => 
+              meta.key === '_institution_location' || 
+              meta.key === 'institution_location'
+            );
+            if (locationMeta && locationMeta.value) {
+              countries.add(locationMeta.value);
+              console.log('Added country from meta_data:', locationMeta.value);
+            }
           }
           
           // Extract universities
           if (program.institution?.name) {
             universities.add(program.institution.name);
+            console.log('Added university:', program.institution.name);
+          } else {
+            // Try to find institution name from meta_data if institution object is not available
+            const institutionMeta = program.meta_data?.find(meta => 
+              meta.key === '_institution_name' || 
+              meta.key === 'institution_name'
+            );
+            if (institutionMeta && institutionMeta.value) {
+              universities.add(institutionMeta.value);
+              console.log('Added university from meta_data:', institutionMeta.value);
+            }
           }
           
           // Extract categories
@@ -624,13 +659,16 @@ const ProgramsPage: React.FC = () => {
           });
         });
         
-        setFilterOptions({
+        const filterOpts = {
           levels: Array.from(levels),
           durations: Array.from(durations),
           countries: Array.from(countries),
           categories: Array.from(categories),
           universities: Array.from(universities)
-        });
+        };
+        
+        console.log('Filter options generated:', filterOpts);
+        setFilterOptions(filterOpts);
       } catch (err: any) {
         setError(err.message || 'Failed to load programs');
         console.error('Error loading programs:', err);
@@ -717,9 +755,19 @@ const ProgramsPage: React.FC = () => {
     }
     
     if (filters.country) {
-      filtered = filtered.filter(program => 
-        program.institution?.location === filters.country
-      );
+      filtered = filtered.filter(program => {
+        // Check if country matches from institution object
+        if (program.institution?.location === filters.country) {
+          return true;
+        }
+        
+        // If not found in institution object, check meta_data
+        const locationMeta = program.meta_data?.find(meta => 
+          meta.key === '_institution_location' || 
+          meta.key === 'institution_location'
+        );
+        return locationMeta?.value === filters.country;
+      });
     }
     
     if (filters.category) {
@@ -730,9 +778,19 @@ const ProgramsPage: React.FC = () => {
     
     // Apply university filter
     if (filters.university) {
-      filtered = filtered.filter(program => 
-        program.institution?.name === filters.university
-      );
+      filtered = filtered.filter(program => {
+        // Check if university matches from institution object
+        if (program.institution?.name === filters.university) {
+          return true;
+        }
+        
+        // If not found in institution object, check meta_data
+        const institutionMeta = program.meta_data?.find(meta => 
+          meta.key === '_institution_name' || 
+          meta.key === 'institution_name'
+        );
+        return institutionMeta?.value === filters.university;
+      });
     }
     
     // Apply fee range filter
@@ -1295,10 +1353,18 @@ const ProgramsPage: React.FC = () => {
                 onChange={(e) => handleFilterChange('country', e.target.value)}
               >
                 <option value="">All Countries</option>
-                {filterOptions.countries.map(country => (
-                  <option key={country} value={country}>{country}</option>
-                ))}
+                {filterOptions.countries.map(country => {
+                  if (!country) return null; // Skip empty values
+                  return (
+                    <option key={country} value={country}>{country}</option>
+                  );
+                })}
               </FilterSelect>
+              {filterOptions.countries.length === 0 && (
+                <div style={{color: 'red', fontSize: '0.8rem', marginTop: '0.25rem'}}>
+                  No countries available
+                </div>
+              )}
             </FilterGroup>
             
             {/* University Filter */}
@@ -1312,10 +1378,18 @@ const ProgramsPage: React.FC = () => {
                 onChange={handleUniversityChange}
               >
                 <option value="">All Universities</option>
-                {filterOptions.universities.map(university => (
-                  <option key={university} value={university}>{university}</option>
-                ))}
+                {filterOptions.universities.map(university => {
+                  if (!university) return null; // Skip empty values
+                  return (
+                    <option key={university} value={university}>{university}</option>
+                  );
+                })}
               </FilterSelect>
+              {filterOptions.universities.length === 0 && (
+                <div style={{color: 'red', fontSize: '0.8rem', marginTop: '0.25rem'}}>
+                  No universities available
+                </div>
+              )}
             </FilterGroup>
             
             {/* Category Filter */}

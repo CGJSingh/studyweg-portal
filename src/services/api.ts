@@ -18,9 +18,20 @@ const CACHE_DURATION = 15 * 60 * 1000; // 15 minutes in milliseconds
 
 // Helper function to extract program details from meta data
 const extractProgramDetails = (metaData: any[]) => {
+  // Extract institution data from meta_data
+  const institutionName = metaData.find(meta => 
+    meta.key === '_institution_name' || 
+    meta.key === 'institution_name'
+  )?.value || '';
+
+  const institutionLocation = metaData.find(meta => 
+    meta.key === '_institution_location' || 
+    meta.key === 'institution_location'
+  )?.value || '';
+
   const institution = {
-    name: metaData.find(meta => meta.key === '_institution_name')?.value || '',
-    location: metaData.find(meta => meta.key === '_institution_location')?.value || ''
+    name: institutionName,
+    location: institutionLocation
   };
 
   const programDetails = {
@@ -65,9 +76,12 @@ const extractProgramDetails = (metaData: any[]) => {
 const transformProduct = (product: any): Program => {
   const { institution, programDetails, videoUrls } = extractProgramDetails(product.meta_data);
 
+  // Only create institution object if we have valid data
+  const institutionObject = (institution.name || institution.location) ? institution : undefined;
+
   return {
     ...product,
-    institution: institution.name ? institution : undefined,
+    institution: institutionObject,
     program_details: programDetails.type ? programDetails : undefined,
     video_urls: videoUrls
   };
@@ -91,7 +105,7 @@ export const fetchPrograms = async (page = 1): Promise<{ programs: Program[], to
     
     console.log('Fetching programs from API for page', page);
     
-    // If cache is invalid, fetch from API
+    // If cache is invalid, fetch from API - use the direct URL from the user
     const response = await axios.get(`${API_URL}`, {
       params: {
         consumer_key: CONSUMER_KEY,
@@ -106,6 +120,12 @@ export const fetchPrograms = async (page = 1): Promise<{ programs: Program[], to
     
     // Transform each product to include program details
     const programs = response.data.map(transformProduct);
+    
+    // Log the first program for debugging
+    if (programs.length > 0) {
+      console.log('First program after transformation:', programs[0].id, programs[0].name);
+      console.log('Institution data:', programs[0].institution);
+    }
     
     // Update cache
     programsCache[page] = programs;
@@ -128,6 +148,7 @@ export const clearProgramsCache = () => {
   console.log('Programs cache cleared');
 };
 
+// Add a new function to fetch all programs for full filter options
 export const fetchAllPrograms = async (): Promise<Program[]> => {
   try {
     // Clear cache to ensure fresh data

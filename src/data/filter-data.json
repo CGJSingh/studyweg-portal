@@ -1,0 +1,21 @@
+{
+  "countries": [
+    "Finland",
+    "France",
+    "Ireland",
+    "Italy"
+  ],
+  "universities": [
+    "HEC Paris",
+    "IED Istituto Europeo di Design",
+    "KEDGE Business School",
+    "Paris School of Business",
+    "Paris Sciences et Lettres University",
+    "The Florence Institute",
+    "University of Galway",
+    "University of Limerick",
+    "University of Milan",
+    "University of Tampere",
+    "University of Turku"
+  ]
+}
