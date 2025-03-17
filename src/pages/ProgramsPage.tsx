@@ -182,16 +182,16 @@ const NoResultsMessage = styled.div`
   grid-column: 1 / -1;
 `;
 
-// New styled components for filtering
+// Update FiltersContainer for a more modern design
 const FiltersContainer = styled.div`
   position: absolute;
   top: calc(100% + 10px);
   right: 0;
   width: 320px;
   background: white;
-  border-radius: 8px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
-  padding: 1.25rem;
+  border-radius: 12px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
+  padding: 1.5rem;
   margin-bottom: 1.5rem;
   z-index: 100;
   max-height: 80vh;
@@ -202,30 +202,30 @@ const FilterHeader = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #eee;
 `;
 
 const FilterTitle = styled.h3`
-  font-size: 1rem;
+  font-size: 1.1rem;
   color: #0c3b5e;
   margin: 0;
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  font-weight: 600;
 `;
 
-const FilterOptions = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 1rem;
-`;
-
+// Update FilterGroup for better spacing
 const FilterGroup = styled.div`
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  margin-bottom: 1.2rem;
 `;
 
+// Update FilterGroupTitle for better visibility
 const FilterGroupTitle = styled.div`
   font-weight: 600;
   font-size: 0.9rem;
@@ -233,18 +233,56 @@ const FilterGroupTitle = styled.div`
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  margin-bottom: 0.3rem;
 `;
 
-const FilterSelect = styled.select`
-  padding: 0.6rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
+// Style for checkboxes
+const CheckboxGroup = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+`;
+
+const CheckboxLabel = styled.label`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   font-size: 0.9rem;
-  background-color: white;
+  color: #333;
+  cursor: pointer;
   
-  &:focus {
-    outline: none;
-    border-color: #f39c12;
+  input {
+    cursor: pointer;
+  }
+`;
+
+// Improved range slider styling
+const RangeSlider = styled.input`
+  width: 100%;
+  margin: 0.5rem 0;
+  -webkit-appearance: none;
+  height: 8px;
+  border-radius: 4px;
+  background: #e1e1e1;
+  outline: none;
+  
+  &::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #f39c12;
+    cursor: pointer;
+  }
+  
+  &::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #f39c12;
+    cursor: pointer;
+    border: none;
   }
 `;
 
@@ -436,6 +474,23 @@ const RangeInput = styled.input`
   }
 `;
 
+// Add FilterSelect back
+const FilterSelect = styled.select`
+  padding: 0.6rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  background-color: white;
+  
+  &:focus {
+    outline: none;
+    border-color: #f39c12;
+  }
+`;
+
+// Define program types
+type ProgramType = 'bachelors' | 'diploma' | 'masters' | 'phd' | 'certificate';
+
 // Define tab types
 type TabType = 'all' | 'top' | 'fast' | 'intake';
 
@@ -470,6 +525,35 @@ const ProgramsPage: React.FC = () => {
     categories: [],
     universities: []
   });
+  
+  // Program types checkbox state
+  const [programTypes, setProgramTypes] = useState<{
+    bachelors: boolean;
+    diploma: boolean;
+    masters: boolean;
+    phd: boolean;
+    certificate: boolean;
+  }>({
+    bachelors: false,
+    diploma: false,
+    masters: false,
+    phd: false,
+    certificate: false
+  });
+  
+  // Fee range slider state
+  const [feeRange, setFeeRange] = useState<{
+    min: number;
+    max: number;
+    currentMin: number;
+    currentMax: number;
+  }>({
+    min: 0,
+    max: 100000,
+    currentMin: 0,
+    currentMax: 100000
+  });
+  
   const [filters, setFilters] = useState<{
     level: string;
     duration: string;
@@ -587,6 +671,34 @@ const ProgramsPage: React.FC = () => {
       );
     }
     
+    // Apply program type filters
+    const activeTypes = Object.entries(programTypes)
+      .filter(([_, isActive]) => isActive)
+      .map(([type]) => type);
+      
+    if (activeTypes.length > 0) {
+      filtered = filtered.filter(program => {
+        const programLevel = program.attributes?.find(attr => attr.name === "Program Level")?.options[0]?.toLowerCase() || '';
+        
+        return activeTypes.some(type => {
+          switch (type) {
+            case 'bachelors':
+              return programLevel.includes('bachelor') || programLevel.includes('undergraduate');
+            case 'diploma':
+              return programLevel.includes('diploma') || programLevel.includes('certificate');
+            case 'masters':
+              return programLevel.includes('master') || programLevel.includes('graduate');
+            case 'phd':
+              return programLevel.includes('phd') || programLevel.includes('doctorate');
+            case 'certificate':
+              return programLevel.includes('certificate') || programLevel.includes('short');
+            default:
+              return false;
+          }
+        });
+      });
+    }
+    
     // Apply additional filters
     if (filters.level) {
       filtered = filtered.filter(program => 
@@ -670,7 +782,7 @@ const ProgramsPage: React.FC = () => {
     }
     
     setFilteredPrograms(filtered);
-  }, [searchQuery, activeTab, filters, sortOption, programs]);
+  }, [searchQuery, activeTab, filters, sortOption, programs, programTypes]);
 
   // Add this new useEffect to generate suggestions based on search query
   useEffect(() => {
@@ -797,22 +909,74 @@ const ProgramsPage: React.FC = () => {
       feeMin: '',
       feeMax: ''
     });
+    
+    // Reset program types
+    setProgramTypes({
+      bachelors: false,
+      diploma: false,
+      masters: false,
+      phd: false,
+      certificate: false
+    });
+    
+    // Reset fee range
+    setFeeRange({
+      ...feeRange,
+      currentMin: feeRange.min,
+      currentMax: feeRange.max
+    });
+    
     setSortOption('default');
+  };
+  
+  // Handle program type checkbox changes
+  const handleProgramTypeChange = (type: ProgramType, checked: boolean) => {
+    setProgramTypes(prev => ({
+      ...prev,
+      [type]: checked
+    }));
+    setCurrentPage(1);
+  };
+  
+  // Handle fee range slider changes
+  const handleFeeRangeChange = (type: 'min' | 'max', value: number) => {
+    setFeeRange(prev => ({
+      ...prev,
+      [type === 'min' ? 'currentMin' : 'currentMax']: value
+    }));
+    
+    // Update the filter values
+    setFilters(prev => ({
+      ...prev,
+      [type === 'min' ? 'feeMin' : 'feeMax']: value.toString()
+    }));
+    
+    setCurrentPage(1);
   };
   
   // Handle fee range changes
   const handleFeeMinChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
     setFilters(prev => ({
       ...prev,
-      feeMin: e.target.value
+      feeMin: value
+    }));
+    setFeeRange(prev => ({
+      ...prev,
+      currentMin: value ? parseInt(value) : 0
     }));
     setCurrentPage(1);
   };
 
   const handleFeeMaxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
     setFilters(prev => ({
       ...prev,
-      feeMax: e.target.value
+      feeMax: value
+    }));
+    setFeeRange(prev => ({
+      ...prev,
+      currentMax: value ? parseInt(value) : feeRange.max
     }));
     setCurrentPage(1);
   };
@@ -1001,70 +1165,106 @@ const ProgramsPage: React.FC = () => {
                 <option value="name-desc">Name (Z-A)</option>
                 <option value="level-asc">Level (Ascending)</option>
                 <option value="level-desc">Level (Descending)</option>
-                <option value="fee-asc">Fee (Ascending)</option>
-                <option value="fee-desc">Fee (Descending)</option>
-                <option value="rating-asc">Rating (Ascending)</option>
-                <option value="rating-desc">Rating (Descending)</option>
+                <option value="fee-asc">Fee (Lowest First)</option>
+                <option value="fee-desc">Fee (Highest First)</option>
+                <option value="rating-asc">Rating (Lowest First)</option>
+                <option value="rating-desc">Rating (Highest First)</option>
               </FilterSelect>
             </FilterGroup>
             
-            {/* Tuition Range Filter */}
-            <RangeFilterGroup>
-              <FilterGroupTitle>
-                <FontAwesomeIcon icon={faDollarSign} />
-                Tuition Fee Range
-              </FilterGroupTitle>
-              <RangeInputs>
-                <RangeInput 
-                  type="number" 
-                  placeholder="Min" 
-                  min="0"
-                  value={filters.feeMin}
-                  onChange={handleFeeMinChange}
-                />
-                <span>-</span>
-                <RangeInput 
-                  type="number" 
-                  placeholder="Max" 
-                  min="0"
-                  value={filters.feeMax}
-                  onChange={handleFeeMaxChange}
-                />
-              </RangeInputs>
-            </RangeFilterGroup>
-            
-            {/* Country Filter */}
-            <FilterGroup>
-              <FilterGroupTitle>
-                <FontAwesomeIcon icon={faMapMarkerAlt} />
-                Country
-              </FilterGroupTitle>
-              <FilterSelect 
-                value={filters.country} 
-                onChange={(e) => handleFilterChange('country', e.target.value)}
-              >
-                <option value="">All Countries</option>
-                {filterOptions.countries.map(country => (
-                  <option key={country} value={country}>{country}</option>
-                ))}
-              </FilterSelect>
-            </FilterGroup>
-            
-            {/* Program Level/Type Filter */}
+            {/* Program Type Checkboxes */}
             <FilterGroup>
               <FilterGroupTitle>
                 <FontAwesomeIcon icon={faGraduationCap} />
                 Program Type
               </FilterGroupTitle>
-              <FilterSelect 
-                value={filters.level} 
-                onChange={(e) => handleFilterChange('level', e.target.value)}
-              >
-                <option value="">All Types</option>
-                {filterOptions.levels.map(level => (
-                  <option key={level} value={level}>{level}</option>
-                ))}
-              </FilterSelect>
+              <CheckboxGroup>
+                <CheckboxLabel>
+                  <input 
+                    type="checkbox" 
+                    checked={programTypes.bachelors}
+                    onChange={(e) => handleProgramTypeChange('bachelors', e.target.checked)}
+                  />
+                  Bachelor's Degree
+                </CheckboxLabel>
+                <CheckboxLabel>
+                  <input 
+                    type="checkbox" 
+                    checked={programTypes.diploma}
+                    onChange={(e) => handleProgramTypeChange('diploma', e.target.checked)}
+                  />
+                  Diploma Programs
+                </CheckboxLabel>
+                <CheckboxLabel>
+                  <input 
+                    type="checkbox" 
+                    checked={programTypes.masters}
+                    onChange={(e) => handleProgramTypeChange('masters', e.target.checked)}
+                  />
+                  Master's Degree
+                </CheckboxLabel>
+                <CheckboxLabel>
+                  <input 
+                    type="checkbox" 
+                    checked={programTypes.phd}
+                    onChange={(e) => handleProgramTypeChange('phd', e.target.checked)}
+                  />
+                  PhD / Doctorate
+                </CheckboxLabel>
+                <CheckboxLabel>
+                  <input 
+                    type="checkbox" 
+                    checked={programTypes.certificate}
+                    onChange={(e) => handleProgramTypeChange('certificate', e.target.checked)}
+                  />
+                  Certificate Programs
+                </CheckboxLabel>
+              </CheckboxGroup>
+            </FilterGroup>
+            
+            {/* Tuition Range Filter */}
+            <FilterGroup>
+              <FilterGroupTitle>
+                <FontAwesomeIcon icon={faDollarSign} />
+                Tuition Fee Range
+              </FilterGroupTitle>
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                  <span>${feeRange.currentMin.toLocaleString()}</span>
+                  <span>${feeRange.currentMax.toLocaleString()}</span>
+                </div>
+                <RangeSlider 
+                  type="range"
+                  min={feeRange.min}
+                  max={feeRange.max}
+                  value={feeRange.currentMin}
+                  onChange={(e) => handleFeeRangeChange('min', parseInt(e.target.value))}
+                />
+                <RangeSlider 
+                  type="range"
+                  min={feeRange.min}
+                  max={feeRange.max}
+                  value={feeRange.currentMax}
+                  onChange={(e) => handleFeeRangeChange('max', parseInt(e.target.value))}
+                />
+                <RangeInputs>
+                  <RangeInput 
+                    type="number" 
+                    placeholder="Min" 
+                    min="0"
+                    value={filters.feeMin}
+                    onChange={handleFeeMinChange}
+                  />
+                  <span>-</span>
+                  <RangeInput 
+                    type="number" 
+                    placeholder="Max" 
+                    min="0"
+                    value={filters.feeMax}
+                    onChange={handleFeeMaxChange}
+                  />
+                </RangeInputs>
+              </div>
             </FilterGroup>
             
             {/* Duration Filter */}
@@ -1080,6 +1280,23 @@ const ProgramsPage: React.FC = () => {
                 <option value="">All Durations</option>
                 {filterOptions.durations.map(duration => (
                   <option key={duration} value={duration}>{duration}</option>
+                ))}
+              </FilterSelect>
+            </FilterGroup>
+            
+            {/* Country Filter */}
+            <FilterGroup>
+              <FilterGroupTitle>
+                <FontAwesomeIcon icon={faMapMarkerAlt} />
+                Country
+              </FilterGroupTitle>
+              <FilterSelect 
+                value={filters.country} 
+                onChange={(e) => handleFilterChange('country', e.target.value)}
+              >
+                <option value="">All Countries</option>
+                {filterOptions.countries.map(country => (
+                  <option key={country} value={country}>{country}</option>
                 ))}
               </FilterSelect>
             </FilterGroup>
@@ -1123,7 +1340,7 @@ const ProgramsPage: React.FC = () => {
               <ActiveFiltersContainer>
                 {filters.level && (
                   <ActiveFilter>
-                    Program Type: {filters.level}
+                    Level: {filters.level}
                     <button onClick={() => clearFilter('level')}>
                       <FontAwesomeIcon icon={faTimes} />
                     </button>
@@ -1168,10 +1385,30 @@ const ProgramsPage: React.FC = () => {
                 
                 {(filters.feeMin || filters.feeMax) && (
                   <ActiveFilter>
-                    Fee: {filters.feeMin ? `$${filters.feeMin}` : '$0'} - {filters.feeMax ? `$${filters.feeMax}` : 'Any'}
+                    Fee: {filters.feeMin ? `$${parseInt(filters.feeMin).toLocaleString()}` : '$0'} - {filters.feeMax ? `$${parseInt(filters.feeMax).toLocaleString()}` : 'Any'}
                     <button onClick={() => {
                       clearFilter('feeMin');
                       clearFilter('feeMax');
+                    }}>
+                      <FontAwesomeIcon icon={faTimes} />
+                    </button>
+                  </ActiveFilter>
+                )}
+                
+                {Object.values(programTypes).some(Boolean) && (
+                  <ActiveFilter>
+                    Types: {Object.entries(programTypes)
+                      .filter(([_, checked]) => checked)
+                      .map(([type]) => type.charAt(0).toUpperCase() + type.slice(1))
+                      .join(', ')}
+                    <button onClick={() => {
+                      setProgramTypes({
+                        bachelors: false,
+                        diploma: false,
+                        masters: false,
+                        phd: false,
+                        certificate: false
+                      });
                     }}>
                       <FontAwesomeIcon icon={faTimes} />
                     </button>
