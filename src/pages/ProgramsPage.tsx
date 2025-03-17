@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
-import { fetchPrograms, clearProgramsCache, fetchAllPrograms } from '../services/api';
+import { fetchPrograms, clearProgramsCache, fetchAllPrograms, isOfflineMode as checkOfflineMode, setOfflineMode } from '../services/api';
 import { Program } from '../types';
 import ProgramCard from '../components/ProgramCard';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -171,7 +171,27 @@ const ErrorMessage = styled.div`
   font-size: 1.2rem;
   color: #e74c3c;
   background-color: #fdeaea;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+`;
+
+const RetryButton = styled.button`
+  background-color: #3498db;
+  color: white;
+  border: none;
   border-radius: 4px;
+  padding: 0.5rem 1.5rem;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  
+  &:hover {
+    background-color: #2980b9;
+  }
 `;
 
 const NoResultsMessage = styled.div`
@@ -497,6 +517,24 @@ type TabType = 'all' | 'top' | 'fast' | 'intake';
 // Define sort options
 type SortOption = 'default' | 'name-asc' | 'name-desc' | 'level-asc' | 'level-desc' | 'fee-asc' | 'fee-desc' | 'rating-asc' | 'rating-desc';
 
+const OfflineNotice = styled.div`
+  background-color: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffeeba;
+  border-radius: 4px;
+  padding: 12px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+`;
+
+const OfflineLabel = styled.span`
+  font-weight: 600;
+  color: #f39c12;
+  margin-right: 0.5rem;
+`;
+
 const ProgramsPage: React.FC = () => {
   const [programs, setPrograms] = useState<Program[]>([]);
   const [filteredPrograms, setFilteredPrograms] = useState<Program[]>([]);
@@ -581,27 +619,49 @@ const ProgramsPage: React.FC = () => {
   }>>([]);
   const [showSuggestions, setShowSuggestions] = useState<boolean>(false);
 
+  const [isOfflineMode, setIsOfflineMode] = useState<boolean>(false);
+
+  // Check offline mode from localStorage on component mount
   useEffect(() => {
-    const loadPrograms = async () => {
-      try {
-        setLoading(true);
-        console.log('Fetching programs for page:', currentPage);
-        
-        // First, fetch the paginated data for display
-        const result = await fetchPrograms(currentPage);
+    try {
+      const offlineStatus = checkOfflineMode();
+      if (offlineStatus) {
+        setIsOfflineMode(true);
+        console.log('App started in offline mode');
+      }
+    } catch (err) {
+      console.error('Error checking offline mode:', err);
+    }
+  }, []);
+
+  // Extract loadPrograms outside useEffect
+  const loadPrograms = async () => {
+    try {
+      setLoading(true);
+      setError(null); // Clear previous errors
+      setIsOfflineMode(false); // Reset offline mode flag
+      console.log('Fetching programs for page:', currentPage);
+      
+      // First, fetch the paginated data for display
+      const result = await fetchPrograms(currentPage);
+      
+      if (result.programs.length === 0) {
+        console.warn('No programs received for the current page');
+      } else {
         console.log('Received programs:', result.programs.length);
         
         // Debug - check structure of the first program
         if (result.programs.length > 0) {
           console.log('First program structure:', JSON.stringify(result.programs[0], null, 2));
         }
-        
-        setPrograms(result.programs);
-        setFilteredPrograms(result.programs);
-        setTotalPages(result.totalPages);
-        
-        // Then, fetch all programs to extract comprehensive filter options
-        // This ensures we have all possible filter values
+      }
+      
+      setPrograms(result.programs);
+      setFilteredPrograms(result.programs);
+      setTotalPages(result.totalPages);
+      
+      // Then, fetch all programs to extract comprehensive filter options
+      try {
         const allPrograms = await fetchAllPrograms();
         console.log('Fetched all programs for filters:', allPrograms.length);
         
@@ -621,10 +681,18 @@ const ProgramsPage: React.FC = () => {
           const duration = program.attributes?.find(attr => attr.name === "Duration")?.options[0];
           if (duration) durations.add(duration);
           
-          // Extract countries
+          // Extract countries from both attribute and meta_data
+          if (program.attributes?.find(attr => attr.name === "Country")?.options[0]) {
+            const countryAttr = program.attributes?.find(attr => attr.name === "Country" || attr.name === "pa_country")?.options[0];
+            if (countryAttr) {
+              countries.add(countryAttr);
+              console.log('Added country from attribute:', countryAttr);
+            }
+          }
+          
           if (program.institution?.location) {
             countries.add(program.institution.location);
-            console.log('Added country:', program.institution.location);
+            console.log('Added country from institution:', program.institution.location);
           } else {
             // Try to find location from meta_data if institution object is not available
             const locationMeta = program.meta_data?.find(meta => 
@@ -637,10 +705,18 @@ const ProgramsPage: React.FC = () => {
             }
           }
           
-          // Extract universities
+          // Extract universities from both attribute and meta_data
+          if (program.attributes?.find(attr => attr.name === "School")?.options[0]) {
+            const schoolAttr = program.attributes?.find(attr => attr.name === "School" || attr.name === "pa_school")?.options[0];
+            if (schoolAttr) {
+              universities.add(schoolAttr);
+              console.log('Added university from attribute:', schoolAttr);
+            }
+          }
+          
           if (program.institution?.name) {
             universities.add(program.institution.name);
-            console.log('Added university:', program.institution.name);
+            console.log('Added university from institution:', program.institution.name);
           } else {
             // Try to find institution name from meta_data if institution object is not available
             const institutionMeta = program.meta_data?.find(meta => 
@@ -669,16 +745,49 @@ const ProgramsPage: React.FC = () => {
         
         console.log('Filter options generated:', filterOpts);
         setFilterOptions(filterOpts);
-      } catch (err: any) {
-        setError(err.message || 'Failed to load programs');
-        console.error('Error loading programs:', err);
-      } finally {
-        setLoading(false);
+      } catch (filterError) {
+        console.error('Error fetching filter options:', filterError);
+        // If we fail to fetch all programs for filters, check if we're in offline mode
+        try {
+          const offlineStatus = checkOfflineMode();
+          if (offlineStatus) {
+            setIsOfflineMode(true);
+            console.log('Setting offline mode based on localStorage flag');
+          }
+        } catch (err) {
+          console.error('Error checking offline mode:', err);
+        }
       }
-    };
-    
+    } catch (mainError) {
+      console.error('Error in main data fetch:', mainError);
+      setError('Failed to load program data. Using sample data instead.');
+      setIsOfflineMode(true);
+      setOfflineMode(true); // Set the offline mode flag in localStorage
+      // Set empty programs to avoid undefined errors if no fallback
+      setPrograms([]);
+      setFilteredPrograms([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Add this function for retrying
+  const handleRetry = () => {
+    setLoading(true);
+    setError(null);
+    clearProgramsCache(); // Clear cache to ensure fresh data
+    try {
+      setOfflineMode(false); // Attempt to exit offline mode
+    } catch (err) {
+      console.error('Error clearing offline mode:', err);
+    }
+    loadPrograms(); // Call loadPrograms directly
+  };
+
+  // Update useEffect to use the extracted function
+  useEffect(() => {
     loadPrograms();
-  }, [currentPage]);
+  }, [currentPage]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     // Filter programs based on search and filters
@@ -1120,13 +1229,43 @@ const ProgramsPage: React.FC = () => {
   if (error) {
     return (
       <PageContainer>
-        <ErrorMessage>{error}</ErrorMessage>
+        {isOfflineMode && (
+          <OfflineNotice>
+            <div>
+              <OfflineLabel>Offline Mode:</OfflineLabel>
+              You're viewing limited program data because we couldn't connect to the server. 
+              Some features may be unavailable.
+            </div>
+            <RetryButton onClick={handleRetry}>
+              Try Again
+            </RetryButton>
+          </OfflineNotice>
+        )}
+        <ErrorMessage>
+          <div>{error}</div>
+          <div>There was a problem connecting to the server. Please check your network connection.</div>
+          <RetryButton onClick={handleRetry}>
+            Retry
+          </RetryButton>
+        </ErrorMessage>
       </PageContainer>
     );
   }
 
   return (
     <PageContainer>
+      {isOfflineMode && (
+        <OfflineNotice>
+          <div>
+            <OfflineLabel>Offline Mode:</OfflineLabel>
+            You're viewing limited program data because we couldn't connect to the server. 
+            Some features may be unavailable.
+          </div>
+          <RetryButton onClick={handleRetry}>
+            Try Again
+          </RetryButton>
+        </OfflineNotice>
+      )}
       <SearchContainer>
         <SearchFilterRow>
           <SearchInputWrapper>
