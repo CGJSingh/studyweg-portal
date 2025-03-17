@@ -169,7 +169,7 @@ const Duration = styled.div`
   font-size: 0.8rem;
 
   svg {
-    color: #f39c12;
+    color: #0c3b5e;
     font-size: 1rem;
   }
 `;
