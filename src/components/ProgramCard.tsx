@@ -101,15 +101,23 @@ const Institution = styled.div`
   color: #0c3b5e;
   margin-bottom: 0.5rem;
   font-size: 0.9rem;
+  
+  svg {
+    color: #007BFF;
+  }
 `;
 
 const Location = styled.div`
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  color: #7f8c8d;
+  color: #000;
   font-size: 0.8rem;
   margin-bottom: 0.5rem;
+  
+  svg {
+    color: #F33066;
+  }
 `;
 
 const TagsContainer = styled.div`
@@ -120,19 +128,15 @@ const TagsContainer = styled.div`
 `;
 
 const Tag = styled.div`
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 0.25rem;
+  gap: 0.5rem;
   background-color: transparent;
   color: #0c3b5e;
-  padding: 0.2rem 0.5rem;
-  border: 1px solid #0c3b5e;
-  border-radius: 20px;
-  font-size: 0.7rem;
-  font-weight: 500;
+  margin-bottom: 0.5rem;
   
   svg {
-    color: #f39c12;
+    color: #27B737;
   }
 `;
 
@@ -248,14 +252,12 @@ const ProgramCard: React.FC<ProgramCardProps> = ({ program }) => {
           </Location>
         )}
         
-        <TagsContainer>
-          {duration && (
-            <Tag>
-              <FontAwesomeIcon icon={faClock} size="xs" />
-              {duration}
-            </Tag>
-          )}
-        </TagsContainer>
+        {duration && (
+          <Tag>
+            <FontAwesomeIcon icon={faClock} size="sm" />
+            {duration}
+          </Tag>
+        )}
         
         <ProgramTitle>{program.name}</ProgramTitle>
         
