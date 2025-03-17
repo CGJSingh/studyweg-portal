@@ -493,15 +493,16 @@ const ProgramsPage: React.FC = () => {
     }
     
     setFilteredPrograms(filtered);
-    setCurrentPage(1); // Reset to first page when filters change
   }, [searchQuery, activeTab, filters, sortOption, programs]);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
+    setCurrentPage(1); // Reset to page 1 when searching
   };
 
   const handleTabChange = (tab: TabType) => {
     setActiveTab(tab);
+    setCurrentPage(1); // Reset to page 1 when changing tabs
   };
   
   // New handlers for filters and sorting
@@ -514,10 +515,12 @@ const ProgramsPage: React.FC = () => {
       ...prev,
       [filterType]: value
     }));
+    setCurrentPage(1); // Reset to page 1 when changing filters
   };
   
   const handleSortChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setSortOption(e.target.value as SortOption);
+    setCurrentPage(1); // Reset to page 1 when changing sort
   };
   
   const clearFilter = (filterType: keyof typeof filters) => {
@@ -543,6 +546,7 @@ const ProgramsPage: React.FC = () => {
   // Function to handle page change
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
+    setLoading(true); // Set loading to true when changing pages
     window.scrollTo(0, 0); // Scroll to top when changing page
   };
 
@@ -580,15 +584,6 @@ const ProgramsPage: React.FC = () => {
     
     return pageNumbers;
   };
-
-  // Add loading effect
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 1800); // Show skeleton for 1.8 seconds to simulate API fetch
-
-    return () => clearTimeout(timer);
-  }, []);
 
   if (loading) {
     return <ProgramsListSkeleton />;
@@ -839,13 +834,13 @@ const ProgramsPage: React.FC = () => {
           
           <PageButton 
             onClick={() => handlePageChange(currentPage + 1)}
-            disabled={currentPage === Math.ceil(filteredPrograms.length / programsPerPage) || currentPage === totalPages}
+            disabled={currentPage >= totalPages}
           >
             <FontAwesomeIcon icon={faChevronRight} />
           </PageButton>
           
           <PageInfo>
-            Page {currentPage} of {Math.ceil(filteredPrograms.length / programsPerPage) || totalPages}
+            Page {currentPage} of {totalPages}
           </PageInfo>
         </PaginationContainer>
       )}
