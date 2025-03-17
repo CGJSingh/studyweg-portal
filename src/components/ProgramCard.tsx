@@ -39,7 +39,7 @@ const Badge = styled.div`
   position: absolute;
   top: 10px;
   left: 10px;
-  background-color: #0c3b5e;
+  background-color: #f39c12;
   color: white;
   padding: 0.3rem 0.8rem;
   border-radius: 4px;
@@ -213,8 +213,8 @@ const ProgramCard: React.FC<ProgramCardProps> = ({ program }) => {
   return (
     <Card onClick={handleClick}>
       <ImageContainer>
-        {programLevel && (
-          <Badge>{programLevel}</Badge>
+        {category && (
+          <Badge>{category}</Badge>
         )}
         <Image 
           src={program.images?.[0]?.src || '/placeholder-program.jpg'} 
@@ -242,12 +242,6 @@ const ProgramCard: React.FC<ProgramCardProps> = ({ program }) => {
         )}
         
         <TagsContainer>
-          {category && (
-            <Tag>
-              <FontAwesomeIcon icon={faTag} size="xs" />
-              {category}
-            </Tag>
-          )}
           {duration && (
             <Tag>
               <FontAwesomeIcon icon={faClock} size="xs" />
