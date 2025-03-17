@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import styled from 'styled-components';
-import { fetchPrograms, clearProgramsCache } from '../services/api';
+import { fetchPrograms, fetchAllPrograms, clearProgramsCache } from '../services/api';
 import { Program } from '../types';
 import ProgramCard from '../components/ProgramCard';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -15,9 +15,11 @@ import {
   faTag,
   faTimes,
   faChevronLeft,
-  faChevronRight
+  faChevronRight,
+  faSchool
 } from '@fortawesome/free-solid-svg-icons';
 import { ProgramsListSkeleton } from '../components/SkeletonLoaders';
+import { useNavigate } from 'react-router-dom';
 
 const PageContainer = styled.div`
   max-width: 1200px;
@@ -318,19 +320,128 @@ const PageInfo = styled.div`
   font-size: 0.9rem;
 `;
 
+// Add new styled components for search suggestions
+const SuggestionsContainer = styled.div`
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background-color: white;
+  border: 1px solid #ddd;
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+  max-height: 300px;
+  overflow-y: auto;
+  z-index: 10;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+`;
+
+const SuggestionItem = styled.div`
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  border-bottom: 1px solid #eee;
+  display: flex;
+  align-items: center;
+  
+  &:last-child {
+    border-bottom: none;
+  }
+  
+  &:hover {
+    background-color: #f5f9ff;
+  }
+`;
+
+const SuggestionIcon = styled.div`
+  margin-right: 10px;
+  color: #666;
+  width: 20px;
+  display: flex;
+  justify-content: center;
+`;
+
+const SuggestionText = styled.div`
+  flex: 1;
+`;
+
+const SuggestionTitle = styled.div`
+  font-weight: 500;
+  margin-bottom: 3px;
+`;
+
+const SuggestionSubtitle = styled.div`
+  font-size: 0.8rem;
+  color: #666;
+`;
+
+const NoSuggestions = styled.div`
+  padding: 0.75rem 1rem;
+  color: #666;
+  text-align: center;
+  font-style: italic;
+`;
+
+const SuggestionButton = styled.div`
+  margin-left: 10px;
+  background-color: #e8f0fe;
+  color: #0066cc;
+  padding: 3px 8px;
+  border-radius: 3px;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  
+  &:hover {
+    background-color: #d0e0fc;
+  }
+`;
+
 // Define tab types
 type TabType = 'all' | 'top' | 'fast' | 'intake';
 
 // Define sort options
 type SortOption = 'default' | 'name-asc' | 'name-desc' | 'level-asc' | 'level-desc';
 
+// Helper function to highlight matched text
+const highlightMatch = (text: string, query: string) => {
+  if (!query.trim()) {
+    return text;
+  }
+  
+  const lowerText = text.toLowerCase();
+  const lowerQuery = query.toLowerCase();
+  
+  if (!lowerText.includes(lowerQuery)) {
+    return text;
+  }
+  
+  const startIndex = lowerText.indexOf(lowerQuery);
+  const endIndex = startIndex + lowerQuery.length;
+  
+  return (
+    <>
+      {text.substring(0, startIndex)}
+      <span style={{ backgroundColor: '#fff9c4', fontWeight: 'bold' }}>
+        {text.substring(startIndex, endIndex)}
+      </span>
+      {text.substring(endIndex)}
+    </>
+  );
+};
+
 const ProgramsPage: React.FC = () => {
+  const navigate = useNavigate();
   const [programs, setPrograms] = useState<Program[]>([]);
+  const [allPrograms, setAllPrograms] = useState<Program[]>([]);
   const [filteredPrograms, setFilteredPrograms] = useState<Program[]>([]);
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [suggestions, setSuggestions] = useState<Program[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>('all');
+  
+  // Refs for handling click outside
+  const searchContainerRef = useRef<HTMLDivElement>(null);
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -362,6 +473,38 @@ const ProgramsPage: React.FC = () => {
     category: ''
   });
   const [sortOption, setSortOption] = useState<SortOption>('default');
+
+  // Load all programs once for search and suggestions
+  useEffect(() => {
+    const loadAllPrograms = async () => {
+      try {
+        // Only load all programs if we haven't already
+        if (allPrograms.length === 0) {
+          const result = await fetchAllPrograms();
+          setAllPrograms(result);
+          console.log('Loaded all programs for search:', result.length);
+        }
+      } catch (err: any) {
+        console.error('Error loading all programs:', err);
+      }
+    };
+    
+    loadAllPrograms();
+  }, []);
+  
+  // Handle clicks outside the search container to close suggestions
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(event.target as Node)) {
+        setShowSuggestions(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   useEffect(() => {
     const loadPrograms = async () => {
@@ -417,17 +560,41 @@ const ProgramsPage: React.FC = () => {
     loadPrograms();
   }, [currentPage]);
 
+  // Update suggestions when search query changes - with debounce
+  useEffect(() => {
+    if (searchQuery.trim() === '') {
+      setSuggestions([]);
+      return;
+    }
+
+    // Add debounce to prevent excessive filtering
+    const debounceTimer = setTimeout(() => {
+      const query = searchQuery.toLowerCase();
+      // Use allPrograms for suggestions for better search experience
+      const matchingPrograms = allPrograms.filter(program => 
+        program.name.toLowerCase().includes(query) || 
+        program.short_description.toLowerCase().includes(query) || 
+        (program.institution?.name && program.institution.name.toLowerCase().includes(query))
+      ).slice(0, 5); // Limit to 5 suggestions
+      
+      setSuggestions(matchingPrograms);
+    }, 300); // 300ms debounce
+
+    return () => clearTimeout(debounceTimer);
+  }, [searchQuery, allPrograms]);
+
   useEffect(() => {
     // Filter programs based on search and filters
     let filtered = [...programs];
     
-    // Apply search filter
+    // Apply search filter - now including institution name
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(program => 
         program.name.toLowerCase().includes(query) || 
         program.description.toLowerCase().includes(query) || 
-        program.short_description.toLowerCase().includes(query)
+        program.short_description.toLowerCase().includes(query) ||
+        (program.institution?.name && program.institution.name.toLowerCase().includes(query))
       );
     }
     
@@ -496,7 +663,20 @@ const ProgramsPage: React.FC = () => {
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
+    setShowSuggestions(true);
     setCurrentPage(1); // Reset to page 1 when searching
+  };
+
+  const handleSuggestionClick = (program: Program) => {
+    setSearchQuery(program.name);
+    setShowSuggestions(false);
+    setCurrentPage(1);
+  };
+
+  const handleSearchFocus = () => {
+    if (searchQuery.trim() !== '') {
+      setShowSuggestions(true);
+    }
   };
 
   const handleTabChange = (tab: TabType) => {
@@ -587,6 +767,10 @@ const ProgramsPage: React.FC = () => {
     return pageNumbers;
   };
 
+  const goToProgramDetail = (programId: number) => {
+    navigate(`/programs/${programId}`);
+  };
+
   if (loading) {
     return <ProgramsListSkeleton />;
   }
@@ -612,16 +796,59 @@ const ProgramsPage: React.FC = () => {
         </UserProfile>
       </HeaderContent>
       
-      <SearchContainer>
+      <SearchContainer ref={searchContainerRef}>
         <SearchIcon>
           <FontAwesomeIcon icon={faSearch} />
         </SearchIcon>
         <SearchInput 
           type="text" 
-          placeholder="Search" 
+          placeholder="Search programs, descriptions, or colleges..." 
           value={searchQuery}
           onChange={handleSearchChange}
+          onFocus={handleSearchFocus}
         />
+        
+        {/* Search Suggestions */}
+        {showSuggestions && suggestions.length > 0 && (
+          <SuggestionsContainer>
+            {suggestions.map(program => (
+              <SuggestionItem 
+                key={program.id} 
+                onClick={() => handleSuggestionClick(program)}
+              >
+                <SuggestionIcon>
+                  {program.institution?.name ? (
+                    <FontAwesomeIcon icon={faSchool} />
+                  ) : (
+                    <FontAwesomeIcon icon={faGraduationCap} />
+                  )}
+                </SuggestionIcon>
+                <SuggestionText>
+                  <SuggestionTitle>
+                    {highlightMatch(program.name, searchQuery)}
+                  </SuggestionTitle>
+                  {program.institution?.name && (
+                    <SuggestionSubtitle>
+                      {highlightMatch(program.institution.name, searchQuery)}
+                    </SuggestionSubtitle>
+                  )}
+                </SuggestionText>
+                <SuggestionButton onClick={(e) => {
+                  e.stopPropagation();
+                  goToProgramDetail(program.id);
+                }}>
+                  View
+                </SuggestionButton>
+              </SuggestionItem>
+            ))}
+          </SuggestionsContainer>
+        )}
+        
+        {showSuggestions && searchQuery.trim() !== '' && suggestions.length === 0 && (
+          <SuggestionsContainer>
+            <NoSuggestions>No matching programs found</NoSuggestions>
+          </SuggestionsContainer>
+        )}
       </SearchContainer>
       
       <TabsContainer>
