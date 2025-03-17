@@ -1,6 +1,6 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
-import { fetchPrograms, fetchAllPrograms, clearProgramsCache } from '../services/api';
+import { fetchPrograms, clearProgramsCache } from '../services/api';
 import { Program } from '../types';
 import ProgramCard from '../components/ProgramCard';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -15,11 +15,9 @@ import {
   faTag,
   faTimes,
   faChevronLeft,
-  faChevronRight,
-  faSchool
+  faChevronRight
 } from '@fortawesome/free-solid-svg-icons';
 import { ProgramsListSkeleton } from '../components/SkeletonLoaders';
-import { useNavigate } from 'react-router-dom';
 
 const PageContainer = styled.div`
   max-width: 1200px;
@@ -320,79 +318,54 @@ const PageInfo = styled.div`
   font-size: 0.9rem;
 `;
 
-// Add new styled components for search suggestions
+// Add these styled components after the existing styled components
 const SuggestionsContainer = styled.div`
   position: absolute;
   top: 100%;
   left: 0;
   right: 0;
+  max-height: 300px;
+  overflow-y: auto;
   background-color: white;
   border: 1px solid #ddd;
   border-top: none;
   border-radius: 0 0 8px 8px;
-  max-height: 300px;
-  overflow-y: auto;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   z-index: 10;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
 `;
 
 const SuggestionItem = styled.div`
   padding: 0.75rem 1rem;
   cursor: pointer;
-  border-bottom: 1px solid #eee;
-  display: flex;
-  align-items: center;
+  border-bottom: 1px solid #f0f0f0;
+  
+  &:hover {
+    background-color: #f5f7fa;
+  }
   
   &:last-child {
     border-bottom: none;
   }
-  
-  &:hover {
-    background-color: #f5f9ff;
-  }
 `;
 
-const SuggestionIcon = styled.div`
-  margin-right: 10px;
-  color: #666;
-  width: 20px;
-  display: flex;
-  justify-content: center;
+const SuggestionHighlight = styled.span`
+  font-weight: 600;
+  color: #0066cc;
 `;
 
-const SuggestionText = styled.div`
-  flex: 1;
-`;
-
-const SuggestionTitle = styled.div`
-  font-weight: 500;
-  margin-bottom: 3px;
-`;
-
-const SuggestionSubtitle = styled.div`
+const SuggestionCategory = styled.span`
   font-size: 0.8rem;
   color: #666;
+  margin-left: 0.5rem;
+  padding: 0.2rem 0.5rem;
+  background-color: #f0f0f0;
+  border-radius: 4px;
 `;
 
 const NoSuggestions = styled.div`
   padding: 0.75rem 1rem;
   color: #666;
-  text-align: center;
   font-style: italic;
-`;
-
-const SuggestionButton = styled.div`
-  margin-left: 10px;
-  background-color: #e8f0fe;
-  color: #0066cc;
-  padding: 3px 8px;
-  border-radius: 3px;
-  font-size: 0.75rem;
-  white-space: nowrap;
-  
-  &:hover {
-    background-color: #d0e0fc;
-  }
 `;
 
 // Define tab types
@@ -401,47 +374,13 @@ type TabType = 'all' | 'top' | 'fast' | 'intake';
 // Define sort options
 type SortOption = 'default' | 'name-asc' | 'name-desc' | 'level-asc' | 'level-desc';
 
-// Helper function to highlight matched text
-const highlightMatch = (text: string, query: string) => {
-  if (!query.trim()) {
-    return text;
-  }
-  
-  const lowerText = text.toLowerCase();
-  const lowerQuery = query.toLowerCase();
-  
-  if (!lowerText.includes(lowerQuery)) {
-    return text;
-  }
-  
-  const startIndex = lowerText.indexOf(lowerQuery);
-  const endIndex = startIndex + lowerQuery.length;
-  
-  return (
-    <>
-      {text.substring(0, startIndex)}
-      <span style={{ backgroundColor: '#fff9c4', fontWeight: 'bold' }}>
-        {text.substring(startIndex, endIndex)}
-      </span>
-      {text.substring(endIndex)}
-    </>
-  );
-};
-
 const ProgramsPage: React.FC = () => {
-  const navigate = useNavigate();
   const [programs, setPrograms] = useState<Program[]>([]);
-  const [allPrograms, setAllPrograms] = useState<Program[]>([]);
   const [filteredPrograms, setFilteredPrograms] = useState<Program[]>([]);
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [suggestions, setSuggestions] = useState<Program[]>([]);
-  const [showSuggestions, setShowSuggestions] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>('all');
-  
-  // Refs for handling click outside
-  const searchContainerRef = useRef<HTMLDivElement>(null);
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -473,38 +412,14 @@ const ProgramsPage: React.FC = () => {
     category: ''
   });
   const [sortOption, setSortOption] = useState<SortOption>('default');
-
-  // Load all programs once for search and suggestions
-  useEffect(() => {
-    const loadAllPrograms = async () => {
-      try {
-        // Only load all programs if we haven't already
-        if (allPrograms.length === 0) {
-          const result = await fetchAllPrograms();
-          setAllPrograms(result);
-          console.log('Loaded all programs for search:', result.length);
-        }
-      } catch (err: any) {
-        console.error('Error loading all programs:', err);
-      }
-    };
-    
-    loadAllPrograms();
-  }, []);
   
-  // Handle clicks outside the search container to close suggestions
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (searchContainerRef.current && !searchContainerRef.current.contains(event.target as Node)) {
-        setShowSuggestions(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
+  // Add these new state variables
+  const [suggestions, setSuggestions] = useState<Array<{
+    id: number;
+    text: string;
+    type: 'program' | 'college' | 'description';
+  }>>([]);
+  const [showSuggestions, setShowSuggestions] = useState<boolean>(false);
 
   useEffect(() => {
     const loadPrograms = async () => {
@@ -560,41 +475,17 @@ const ProgramsPage: React.FC = () => {
     loadPrograms();
   }, [currentPage]);
 
-  // Update suggestions when search query changes - with debounce
-  useEffect(() => {
-    if (searchQuery.trim() === '') {
-      setSuggestions([]);
-      return;
-    }
-
-    // Add debounce to prevent excessive filtering
-    const debounceTimer = setTimeout(() => {
-      const query = searchQuery.toLowerCase();
-      // Use allPrograms for suggestions for better search experience
-      const matchingPrograms = allPrograms.filter(program => 
-        program.name.toLowerCase().includes(query) || 
-        program.short_description.toLowerCase().includes(query) || 
-        (program.institution?.name && program.institution.name.toLowerCase().includes(query))
-      ).slice(0, 5); // Limit to 5 suggestions
-      
-      setSuggestions(matchingPrograms);
-    }, 300); // 300ms debounce
-
-    return () => clearTimeout(debounceTimer);
-  }, [searchQuery, allPrograms]);
-
   useEffect(() => {
     // Filter programs based on search and filters
     let filtered = [...programs];
     
-    // Apply search filter - now including institution name
+    // Apply search filter
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(program => 
         program.name.toLowerCase().includes(query) || 
         program.description.toLowerCase().includes(query) || 
-        program.short_description.toLowerCase().includes(query) ||
-        (program.institution?.name && program.institution.name.toLowerCase().includes(query))
+        program.short_description.toLowerCase().includes(query)
       );
     }
     
@@ -661,22 +552,89 @@ const ProgramsPage: React.FC = () => {
     setFilteredPrograms(filtered);
   }, [searchQuery, activeTab, filters, sortOption, programs]);
 
+  // Add this new useEffect to generate suggestions based on search query
+  useEffect(() => {
+    if (!searchQuery || searchQuery.length < 2) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+
+    const query = searchQuery.toLowerCase();
+    const newSuggestions: Array<{
+      id: number;
+      text: string;
+      type: 'program' | 'college' | 'description';
+    }> = [];
+    
+    // Limit to 10 suggestions total
+    const maxSuggestions = 10;
+    
+    // Add program name suggestions
+    programs.forEach(program => {
+      if (newSuggestions.length >= maxSuggestions) return;
+      
+      const name = program.name;
+      if (name.toLowerCase().includes(query)) {
+        newSuggestions.push({
+          id: program.id,
+          text: name,
+          type: 'program'
+        });
+      }
+    });
+    
+    // Add college/institution suggestions
+    const collegesAdded = new Set<string>();
+    programs.forEach(program => {
+      if (newSuggestions.length >= maxSuggestions) return;
+      
+      if (program.institution?.name) {
+        const college = program.institution.name;
+        if (
+          college.toLowerCase().includes(query) && 
+          !collegesAdded.has(college.toLowerCase())
+        ) {
+          collegesAdded.add(college.toLowerCase());
+          newSuggestions.push({
+            id: program.id,
+            text: college,
+            type: 'college'
+          });
+        }
+      }
+    });
+    
+    // Add short descriptions that match
+    programs.forEach(program => {
+      if (newSuggestions.length >= maxSuggestions) return;
+      
+      const description = program.short_description;
+      if (
+        description && 
+        description.toLowerCase().includes(query) &&
+        description.length > 10
+      ) {
+        // Trim the description to a reasonable length
+        const truncatedDesc = description.length > 50 
+          ? description.substring(0, 50) + '...'
+          : description;
+          
+        newSuggestions.push({
+          id: program.id,
+          text: truncatedDesc,
+          type: 'description'
+        });
+      }
+    });
+    
+    setSuggestions(newSuggestions);
+    setShowSuggestions(newSuggestions.length > 0);
+  }, [searchQuery, programs]);
+
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
-    setShowSuggestions(true);
     setCurrentPage(1); // Reset to page 1 when searching
-  };
-
-  const handleSuggestionClick = (program: Program) => {
-    setSearchQuery(program.name);
-    setShowSuggestions(false);
-    setCurrentPage(1);
-  };
-
-  const handleSearchFocus = () => {
-    if (searchQuery.trim() !== '') {
-      setShowSuggestions(true);
-    }
   };
 
   const handleTabChange = (tab: TabType) => {
@@ -767,8 +725,22 @@ const ProgramsPage: React.FC = () => {
     return pageNumbers;
   };
 
-  const goToProgramDetail = (programId: number) => {
-    navigate(`/programs/${programId}`);
+  // Add this function to handle selecting a suggestion
+  const handleSelectSuggestion = (suggestion: { id: number; text: string; type: string }) => {
+    if (suggestion.type === 'program' || suggestion.type === 'college') {
+      setSearchQuery(suggestion.text);
+    } else {
+      // For descriptions, we set a shorter version as the search query
+      const words = suggestion.text.split(' ');
+      const shortQuery = words.slice(0, 3).join(' ');
+      setSearchQuery(shortQuery);
+    }
+    setShowSuggestions(false);
+  };
+  
+  // Add this function to hide suggestions when clicking outside
+  const handleClickOutside = () => {
+    setShowSuggestions(false);
   };
 
   if (loading) {
@@ -796,57 +768,59 @@ const ProgramsPage: React.FC = () => {
         </UserProfile>
       </HeaderContent>
       
-      <SearchContainer ref={searchContainerRef}>
+      <SearchContainer>
         <SearchIcon>
           <FontAwesomeIcon icon={faSearch} />
         </SearchIcon>
         <SearchInput 
           type="text" 
-          placeholder="Search programs, descriptions, or colleges..." 
+          placeholder="Search programs, colleges, or descriptions" 
           value={searchQuery}
           onChange={handleSearchChange}
-          onFocus={handleSearchFocus}
+          onFocus={() => searchQuery.length >= 2 && suggestions.length > 0 && setShowSuggestions(true)}
+          onBlur={() => setTimeout(() => handleClickOutside(), 200)}
         />
         
-        {/* Search Suggestions */}
-        {showSuggestions && suggestions.length > 0 && (
+        {showSuggestions && (
           <SuggestionsContainer>
-            {suggestions.map(program => (
-              <SuggestionItem 
-                key={program.id} 
-                onClick={() => handleSuggestionClick(program)}
-              >
-                <SuggestionIcon>
-                  {program.institution?.name ? (
-                    <FontAwesomeIcon icon={faSchool} />
-                  ) : (
-                    <FontAwesomeIcon icon={faGraduationCap} />
-                  )}
-                </SuggestionIcon>
-                <SuggestionText>
-                  <SuggestionTitle>
-                    {highlightMatch(program.name, searchQuery)}
-                  </SuggestionTitle>
-                  {program.institution?.name && (
-                    <SuggestionSubtitle>
-                      {highlightMatch(program.institution.name, searchQuery)}
-                    </SuggestionSubtitle>
-                  )}
-                </SuggestionText>
-                <SuggestionButton onClick={(e) => {
-                  e.stopPropagation();
-                  goToProgramDetail(program.id);
-                }}>
-                  View
-                </SuggestionButton>
-              </SuggestionItem>
-            ))}
-          </SuggestionsContainer>
-        )}
-        
-        {showSuggestions && searchQuery.trim() !== '' && suggestions.length === 0 && (
-          <SuggestionsContainer>
-            <NoSuggestions>No matching programs found</NoSuggestions>
+            {suggestions.length > 0 ? (
+              suggestions.map((suggestion, index) => {
+                // Highlight the matching part of the suggestion
+                const query = searchQuery.toLowerCase();
+                const text = suggestion.text;
+                const lowerText = text.toLowerCase();
+                const matchIndex = lowerText.indexOf(query);
+                
+                let before = '';
+                let match = '';
+                let after = '';
+                
+                if (matchIndex >= 0) {
+                  before = text.substring(0, matchIndex);
+                  match = text.substring(matchIndex, matchIndex + query.length);
+                  after = text.substring(matchIndex + query.length);
+                } else {
+                  match = text; // If no direct match, show the whole text
+                }
+                
+                return (
+                  <SuggestionItem 
+                    key={index} 
+                    onMouseDown={() => handleSelectSuggestion(suggestion)}
+                  >
+                    {before}
+                    <SuggestionHighlight>{match}</SuggestionHighlight>
+                    {after}
+                    <SuggestionCategory>
+                      {suggestion.type === 'program' ? 'Program' : 
+                       suggestion.type === 'college' ? 'College' : 'Description'}
+                    </SuggestionCategory>
+                  </SuggestionItem>
+                );
+              })
+            ) : (
+              <NoSuggestions>No suggestions found</NoSuggestions>
+            )}
           </SuggestionsContainer>
         )}
       </SearchContainer>
