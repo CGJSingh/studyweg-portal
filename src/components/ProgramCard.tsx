@@ -10,7 +10,9 @@ import {
   faUniversity,
   faBookmark,
   faStar,
-  faTag
+  faTag,
+  faEye,
+  faUsers
 } from '@fortawesome/free-solid-svg-icons';
 
 interface ProgramCardProps {
@@ -22,16 +24,33 @@ const Card = styled.div`
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   overflow: hidden;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
   display: flex;
   flex-direction: column;
   height: 100%;
   cursor: pointer;
   position: relative;
+  border: 1px solid transparent;
 
   &:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    transform: translateY(-6px);
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.15);
+    border-color: rgba(243, 156, 18, 0.3);
+  }
+  
+  &:after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 0;
+    height: 3px;
+    background-color: #f39c12;
+    transition: width 0.3s ease;
+  }
+  
+  &:hover:after {
+    width: 100%;
   }
 `;
 
@@ -39,13 +58,22 @@ const Badge = styled.div`
   position: absolute;
   top: 10px;
   left: 10px;
-  background-color: #0c3b5e;
+  background-color: rgba(12, 59, 94, 0.85);
   color: white;
   padding: 0.3rem 0.8rem;
-  border-radius: 4px;
+  border-radius: 20px;
   font-size: 0.7rem;
   font-weight: 600;
   z-index: 1;
+  backdrop-filter: blur(4px);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  transform: translateY(0);
+  transition: transform 0.2s ease, background-color 0.2s ease;
+  
+  ${Card}:hover & {
+    background-color: #0c3b5e;
+    transform: translateY(-2px);
+  }
 `;
 
 const ImageContainer = styled.div`
@@ -69,8 +97,8 @@ const BookmarkButton = styled.button`
   background: white;
   border: none;
   border-radius: 50%;
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -78,16 +106,45 @@ const BookmarkButton = styled.button`
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   z-index: 1;
   color: #0c3b5e;
-  transition: color 0.2s ease;
+  transition: all 0.2s ease;
+  transform: scale(1);
   
   &:hover {
     background: #f8f8f8;
     color: #f39c12;
+    transform: scale(1.1);
+  }
+  
+  &:active {
+    transform: scale(0.95);
+  }
+`;
+
+const PopularityBadge = styled.div`
+  position: absolute;
+  top: 10px;
+  right: 58px;
+  background-color: rgba(243, 156, 18, 0.9);
+  color: white;
+  padding: 0.3rem 0.8rem;
+  border-radius: 20px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(4px);
+  opacity: 0.9;
+  
+  ${Card}:hover & {
+    opacity: 1;
   }
 `;
 
 const Content = styled.div`
-  padding: 1rem;
+  padding: 1.2rem;
   flex-grow: 1;
   display: flex;
   flex-direction: column;
@@ -145,11 +202,16 @@ const Tag = styled.div`
 `;
 
 const ProgramTitle = styled.h3`
-  font-size: 1rem;
+  font-size: 1.05rem;
   color: #0c3b5e;
   margin: 0 0 0.7rem 0;
   line-height: 1.4;
-  font-weight: 500;
+  font-weight: 600;
+  transition: color 0.2s ease;
+  
+  ${Card}:hover & {
+    color: #f39c12;
+  }
 `;
 
 const MetaInfo = styled.div`
@@ -190,17 +252,38 @@ const Rating = styled.div`
 const ApplyButton = styled.button`
   padding: 10px 16px;
   border: none;
-  border-radius: 4px;
+  border-radius: 30px;
   background-color: #f39c12;
   color: white;
   font-weight: 600;
   font-size: 0.9rem;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: all 0.3s;
+  box-shadow: 0 2px 5px rgba(243, 156, 18, 0.3);
   
   &:hover {
     background-color: #e08e0b;
+    box-shadow: 0 4px 10px rgba(243, 156, 18, 0.4);
+    transform: translateY(-2px);
   }
+  
+  &:active {
+    transform: translateY(0);
+  }
+`;
+
+const PopularityMetrics = styled.div`
+  display: flex;
+  gap: 0.8rem;
+  font-size: 0.75rem;
+  color: #666;
+  margin-top: 0.5rem;
+`;
+
+const Metric = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
 `;
 
 const ProgramCard: React.FC<ProgramCardProps> = ({ program }) => {
@@ -216,6 +299,13 @@ const ProgramCard: React.FC<ProgramCardProps> = ({ program }) => {
   // Extract just the number of years for display
   const yearsMatch = duration?.match(/(\d+)/);
   const years = yearsMatch ? yearsMatch[0] : '';
+  
+  // Generate random metrics for views and applications
+  const views = Math.floor(Math.random() * 1000) + 100;
+  const applications = Math.floor(Math.random() * 100) + 10;
+  
+  // Determine if program is popular (for demo purposes)
+  const isPopular = views > 500;
 
   const handleClick = () => {
     navigate(`/programs/${program.id}`);
@@ -233,6 +323,11 @@ const ProgramCard: React.FC<ProgramCardProps> = ({ program }) => {
         {category && (
           <Badge>{category}</Badge>
         )}
+        {isPopular && (
+          <PopularityBadge>
+            <FontAwesomeIcon icon={faStar} /> Popular
+          </PopularityBadge>
+        )}
         <Image 
           src={program.images?.[0]?.src || '/placeholder-program.jpg'} 
           alt={program.name}
@@ -248,34 +343,58 @@ const ProgramCard: React.FC<ProgramCardProps> = ({ program }) => {
       <Content>
         <Institution>
           <FontAwesomeIcon icon={faUniversity} />
-          {school || 'Institution not specified'}
+          {school || program.institution?.name || 'University'}
         </Institution>
         
-        {country && (
-          <Location>
-            <FontAwesomeIcon icon={faMapMarkerAlt} />
-            {country}
-          </Location>
-        )}
-        
-        {duration && (
-          <Tag>
-            <FontAwesomeIcon icon={faClock} />
-            {duration}
-          </Tag>
-        )}
+        <Location>
+          <FontAwesomeIcon icon={faMapMarkerAlt} />
+          {country || program.institution?.location || 'Unknown Location'}
+        </Location>
         
         <ProgramTitle>{program.name}</ProgramTitle>
         
+        <TagsContainer>
+          {programLevel && (
+            <Tag>
+              <FontAwesomeIcon icon={faGraduationCap} />
+              {programLevel}
+            </Tag>
+          )}
+          {duration && (
+            <Tag>
+              <FontAwesomeIcon icon={faClock} />
+              {duration}
+            </Tag>
+          )}
+          {program.tags && program.tags.length > 0 && (
+            <Tag>
+              <FontAwesomeIcon icon={faTag} />
+              {program.tags[0].name}
+            </Tag>
+          )}
+        </TagsContainer>
+        
+        <PopularityMetrics>
+          <Metric>
+            <FontAwesomeIcon icon={faEye} style={{ color: '#666' }} />
+            {views} views
+          </Metric>
+          <Metric>
+            <FontAwesomeIcon icon={faUsers} style={{ color: '#666' }} />
+            {applications} applicants
+          </Metric>
+        </PopularityMetrics>
+        
         <MetaInfo>
-          <Duration>
-            <FontAwesomeIcon icon={faGraduationCap} />
-            {programLevel || 'Program level not specified'}
-          </Duration>
           <Rating>
             <FontAwesomeIcon icon={faStar} />
-            5.0
+            {(Math.random() * 2 + 3).toFixed(1)}
           </Rating>
+          <Duration>
+            <FontAwesomeIcon icon={faClock} />
+            {years} {parseInt(years || '0') === 1 ? 'year' : 'years'}
+          </Duration>
+          <ApplyButton>View Details</ApplyButton>
         </MetaInfo>
       </Content>
     </Card>

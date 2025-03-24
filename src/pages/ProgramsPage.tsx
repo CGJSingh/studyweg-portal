@@ -18,8 +18,15 @@ import {
   faChevronLeft,
   faChevronRight,
   faDollarSign,
-  faUniversity
+  faUniversity,
+  faBookmark,
+  faHistory,
+  faTrash,
+  faEye,
+  faUsers
 } from '@fortawesome/free-solid-svg-icons';
+import { motion as m } from 'framer-motion';
+import { useLocalStorage } from '../hooks/useLocalStorage';
 import { ProgramsListSkeleton as ProgramsLoadingSkeleton } from '../components/SkeletonLoaders';
 
 const PageContainer = styled.div`
@@ -106,6 +113,11 @@ const SearchInputWrapper = styled.div`
   position: relative;
   flex: 1;
   max-width: 600px;
+  transition: all 0.3s ease;
+  
+  &:focus-within {
+    transform: translateY(-2px);
+  }
 `;
 
 const SearchIcon = styled.div`
@@ -114,20 +126,36 @@ const SearchIcon = styled.div`
   top: 50%;
   transform: translateY(-50%);
   color: #7f8c8d;
+  transition: color 0.3s ease;
+  
+  ${SearchInputWrapper}:focus-within & {
+    color: #f39c12;
+  }
 `;
 
 const SearchInput = styled.input`
   width: 100%;
-  padding: 0.75rem 1rem 0.75rem 2.5rem;
+  padding: 0.85rem 1rem 0.85rem 2.8rem;
   border: 1px solid #ddd;
-  border-radius: 8px;
+  border-radius: 12px;
   font-size: 1rem;
   background-color: white;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
   
   &:focus {
     outline: none;
     border-color: #f39c12;
-    box-shadow: 0 0 0 2px rgba(243, 156, 18, 0.2);
+    box-shadow: 0 4px 10px rgba(243, 156, 18, 0.15);
+  }
+  
+  &::placeholder {
+    color: #aab;
+    transition: color 0.3s ease;
+  }
+  
+  &:focus::placeholder {
+    color: #ccd;
   }
 `;
 
@@ -135,12 +163,19 @@ const TabsContainer = styled.div`
   display: flex;
   border-bottom: 1px solid #eee;
   margin-bottom: 1.5rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+  
+  &::-webkit-scrollbar {
+    display: none;
+  }
 `;
 
 const Tab = styled.button<{ active: boolean }>`
   padding: 0.75rem 1.5rem;
   background: none;
   border: none;
+  position: relative;
   border-bottom: 2px solid ${props => props.active ? '#f39c12' : 'transparent'};
   color: ${props => props.active ? '#f39c12' : '#666'};
   font-weight: ${props => props.active ? '600' : '400'};
@@ -151,12 +186,36 @@ const Tab = styled.button<{ active: boolean }>`
   &:hover {
     color: #f39c12;
   }
+  
+  &:after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 50%;
+    width: 0;
+    height: 2px;
+    background-color: #f39c12;
+    transition: all 0.2s ease;
+    transform: translateX(-50%);
+  }
+  
+  &:hover:after {
+    width: 80%;
+  }
 `;
 
 const ProgramsGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 1.5rem;
+  margin-bottom: 2rem;
+  opacity: 1;
+  animation: fadeIn 0.5s ease;
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
 `;
 
 const LoadingMessage = styled.div`
@@ -164,6 +223,9 @@ const LoadingMessage = styled.div`
   padding: 2rem;
   font-size: 1.2rem;
   color: #666;
+  background-color: #f9f9f9;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 `;
 
 const ErrorMessage = styled.div`
@@ -172,51 +234,91 @@ const ErrorMessage = styled.div`
   font-size: 1.2rem;
   color: #e74c3c;
   background-color: #fdeaea;
-  border-radius: 8px;
+  border-radius: 12px;
   margin-bottom: 1.5rem;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 1rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 `;
 
 const RetryButton = styled.button`
   background-color: #3498db;
   color: white;
   border: none;
-  border-radius: 4px;
+  border-radius: 30px;
   padding: 0.5rem 1.5rem;
   font-size: 1rem;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: all 0.3s;
+  box-shadow: 0 2px 5px rgba(52, 152, 219, 0.3);
   
   &:hover {
     background-color: #2980b9;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(52, 152, 219, 0.4);
+  }
+  
+  &:active {
+    transform: translateY(0);
   }
 `;
 
 const NoResultsMessage = styled.div`
   text-align: center;
-  padding: 2rem;
+  padding: 3rem 2rem;
   font-size: 1.2rem;
   color: #666;
   grid-column: 1 / -1;
+  background-color: #f9f9f9;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  
+  svg {
+    font-size: 2.5rem;
+    color: #ddd;
+    margin-bottom: 0.5rem;
+  }
 `;
 
-// Update FiltersContainer for a more modern design
-const FiltersContainer = styled.div`
+const FiltersContainer = styled(m.div)`
   position: absolute;
   top: calc(100% + 10px);
   right: 0;
-  width: 320px;
+  width: 350px;
   background: white;
-  border-radius: 12px;
-  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
+  border-radius: 16px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
   padding: 1.5rem;
   margin-bottom: 1.5rem;
   z-index: 100;
-  max-height: 80vh;
+  max-height: 85vh;
   overflow-y: auto;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  
+  /* Scrollbar styling */
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 10px;
+    
+    &:hover {
+      background: #aaa;
+    }
+  }
 `;
 
 const FilterHeader = styled.div`
@@ -238,15 +340,22 @@ const FilterTitle = styled.h3`
   font-weight: 600;
 `;
 
-// Update FilterGroup for better spacing
 const FilterGroup = styled.div`
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  margin-bottom: 1.2rem;
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background-color: #f9f9f9;
+  border-radius: 12px;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    background-color: #f0f7ff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  }
 `;
 
-// Update FilterGroupTitle for better visibility
 const FilterGroupTitle = styled.div`
   font-weight: 600;
   font-size: 0.9rem;
@@ -254,56 +363,105 @@ const FilterGroupTitle = styled.div`
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  margin-bottom: 0.3rem;
+  margin-bottom: 0.8rem;
+  
+  svg {
+    color: #f39c12;
+  }
 `;
 
-// Style for checkboxes
 const CheckboxGroup = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.7rem;
 `;
 
 const CheckboxLabel = styled.label`
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.7rem;
   font-size: 0.9rem;
   color: #333;
   cursor: pointer;
+  position: relative;
+  padding: 0.3rem 0;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    color: #0c3b5e;
+  }
   
   input {
     cursor: pointer;
+    margin: 0;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    border: 2px solid #ccc;
+    border-radius: 4px;
+    outline: none;
+    transition: all 0.2s ease;
+    position: relative;
+    
+    &:checked {
+      border-color: #f39c12;
+      background-color: #f39c12;
+      
+      &:after {
+        content: '✓';
+        position: absolute;
+        top: -1px;
+        left: 3px;
+        color: white;
+        font-size: 12px;
+      }
+    }
+    
+    &:hover {
+      border-color: #f39c12;
+    }
   }
 `;
 
-// Improved range slider styling
 const RangeSlider = styled.input`
   width: 100%;
-  margin: 0.5rem 0;
+  margin: 1rem 0;
   -webkit-appearance: none;
   height: 8px;
   border-radius: 4px;
   background: #e1e1e1;
-    outline: none;
+  outline: none;
   
   &::-webkit-slider-thumb {
     -webkit-appearance: none;
     appearance: none;
-    width: 18px;
-    height: 18px;
+    width: 20px;
+    height: 20px;
     border-radius: 50%;
     background: #f39c12;
     cursor: pointer;
+    border: 2px solid white;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    transition: all 0.2s ease;
+    
+    &:hover {
+      transform: scale(1.15);
+    }
   }
   
   &::-moz-range-thumb {
-    width: 18px;
-    height: 18px;
+    width: 20px;
+    height: 20px;
     border-radius: 50%;
     background: #f39c12;
     cursor: pointer;
-    border: none;
+    border: 2px solid white;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    transition: all 0.2s ease;
+    
+    &:hover {
+      transform: scale(1.15);
+    }
   }
 `;
 
@@ -318,11 +476,18 @@ const ActiveFilter = styled.div`
   display: flex;
   align-items: center;
   gap: 0.25rem;
-  background-color: #e1f0fa;
-  color: #f39c12;
-  padding: 0.4rem 0.75rem;
+  background-color: #f0f7ff;
+  color: #0c3b5e;
+  padding: 0.5rem 0.75rem;
   border-radius: 20px;
   font-size: 0.75rem;
+  transition: all 0.2s ease;
+  border: 1px solid rgba(0, 123, 255, 0.1);
+  
+  &:hover {
+    background-color: #e1f0fa;
+    transform: translateY(-2px);
+  }
   
   button {
     background: none;
@@ -331,10 +496,16 @@ const ActiveFilter = styled.div`
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #f39c12;
+    color: #0c3b5e;
     font-size: 0.8rem;
     padding: 0;
     margin-left: 0.25rem;
+    transition: all 0.2s ease;
+    
+    &:hover {
+      color: #f33066;
+      transform: scale(1.2);
+    }
   }
 `;
 
@@ -347,9 +518,12 @@ const ClearFiltersButton = styled.button`
   display: flex;
   align-items: center;
   gap: 0.25rem;
-  padding: 0.5rem;
+  padding: 0.5rem 0.8rem;
+  border-radius: 20px;
+  transition: all 0.2s ease;
   
   &:hover {
+    background-color: rgba(231, 76, 60, 0.1);
     text-decoration: underline;
   }
 `;
@@ -371,6 +545,10 @@ const PaginationContainer = styled.div`
   align-items: center;
   margin-top: 2rem;
   gap: 0.5rem;
+  padding: 1rem;
+  background-color: rgba(245, 247, 250, 0.7);
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 `;
 
 const PageButton = styled.button<{ active?: boolean }>`
@@ -378,17 +556,22 @@ const PageButton = styled.button<{ active?: boolean }>`
   border: 1px solid ${props => props.active ? '#f39c12' : '#ddd'};
   background-color: ${props => props.active ? '#f39c12' : 'white'};
   color: ${props => props.active ? 'white' : '#333'};
-  border-radius: 4px;
+  border-radius: 8px;
   cursor: pointer;
   font-weight: ${props => props.active ? '600' : 'normal'};
+  transition: all 0.2s ease;
   
   &:hover {
     background-color: ${props => props.active ? '#f39c12' : '#f7f7f7'};
+    transform: translateY(-2px);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
   }
   
   &:disabled {
     cursor: not-allowed;
     opacity: 0.5;
+    transform: none;
+    box-shadow: none;
   }
 `;
 
@@ -396,9 +579,11 @@ const PageInfo = styled.div`
   margin: 0 1rem;
   color: #666;
   font-size: 0.9rem;
+  border-left: 1px solid #eee;
+  border-right: 1px solid #eee;
+  padding: 0 1rem;
 `;
 
-// Add these styled components after the existing styled components
 const SuggestionsContainer = styled.div`
   position: absolute;
   top: 100%;
@@ -409,18 +594,38 @@ const SuggestionsContainer = styled.div`
   background-color: white;
   border: 1px solid #ddd;
   border-top: none;
-  border-radius: 0 0 8px 8px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 0 0 12px 12px;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
   z-index: 10;
+  
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 10px;
+    
+    &:hover {
+      background: #aaa;
+    }
+  }
 `;
 
 const SuggestionItem = styled.div`
   padding: 0.75rem 1rem;
   cursor: pointer;
   border-bottom: 1px solid #f0f0f0;
+  transition: all 0.2s ease;
   
   &:hover {
     background-color: #f5f7fa;
+    padding-left: 1.2rem;
   }
   
   &:last-child {
@@ -440,6 +645,11 @@ const SuggestionCategory = styled.span`
   padding: 0.2rem 0.5rem;
   background-color: #f0f0f0;
   border-radius: 4px;
+  transition: all 0.2s ease;
+  
+  ${SuggestionItem}:hover & {
+    background-color: #e6e9ef;
+  }
 `;
 
 const NoSuggestions = styled.div`
@@ -448,7 +658,6 @@ const NoSuggestions = styled.div`
   font-style: italic;
 `;
 
-// Add a new FilterButton style
 const FilterButton = styled.button`
   display: flex;
   align-items: center;
@@ -462,13 +671,19 @@ const FilterButton = styled.button`
   font-size: 0.9rem;
   cursor: pointer;
   transition: all 0.2s;
+  box-shadow: 0 2px 5px rgba(243, 156, 18, 0.3);
   
   &:hover {
     background-color: #e08e0b;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(243, 156, 18, 0.4);
+  }
+  
+  &:active {
+    transform: translateY(0);
   }
 `;
 
-// Add a new range filter component
 const RangeFilterGroup = styled.div`
   display: flex;
   flex-direction: column;
@@ -486,26 +701,34 @@ const RangeInput = styled.input`
   width: 100%;
   padding: 0.6rem;
   border: 1px solid #ddd;
-  border-radius: 4px;
+  border-radius: 8px;
   font-size: 0.9rem;
+  transition: all 0.2s ease;
   
   &:focus {
     outline: none;
     border-color: #f39c12;
+    box-shadow: 0 0 0 3px rgba(243, 156, 18, 0.2);
   }
 `;
 
-// Add FilterSelect back
 const FilterSelect = styled.select`
   padding: 0.6rem;
   border: 1px solid #ddd;
-  border-radius: 4px;
+  border-radius: 8px;
   font-size: 0.9rem;
   background-color: white;
+  transition: all 0.2s ease;
+  cursor: pointer;
   
   &:focus {
     outline: none;
     border-color: #f39c12;
+    box-shadow: 0 0 0 3px rgba(243, 156, 18, 0.2);
+  }
+  
+  &:hover {
+    border-color: #ccc;
   }
 `;
 
@@ -539,18 +762,132 @@ const OfflineLabel = styled.span`
 // Add this after the styled components and before the ProgramsPage component
 const SEARCH_DEBOUNCE_DELAY = 500; // 500ms delay
 
-const ProgramsListSkeleton = styled.div`
-  min-height: 500px;
-`;
-
-// Add a new styled component for the result count
+// Add the ResultSummary component that was missing
 const ResultSummary = styled.div`
   color: #666;
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
   font-size: 0.9rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  padding: 1rem 1.2rem;
+  background-color: #f9f9f9;
+  border-radius: 12px;
+  border-left: 3px solid #f39c12;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+  
+  strong {
+    color: #0c3b5e;
+    font-weight: 600;
+  }
+`;
+
+// Add styled components for saved searches feature
+const SaveSearchButton = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: #fff;
+  color: #0c3b5e;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 0.75rem 1.25rem;
+  font-weight: 500;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  
+  &:hover {
+    background-color: #f0f7ff;
+    border-color: #007bff;
+    color: #007bff;
+  }
+`;
+
+const SavedSearchesButton = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: #fff;
+  color: #0c3b5e;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 0.75rem 1.25rem;
+  font-weight: 500;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  
+  &:hover {
+    background-color: #f8f8f8;
+    border-color: #ccc;
+  }
+`;
+
+const SavedSearchesPanel = styled(m.div)`
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  width: 350px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+  padding: 1.5rem;
+  z-index: 100;
+`;
+
+const SavedSearchItem = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.8rem;
+  border-bottom: 1px solid #eee;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    background-color: #f5f7fa;
+  }
+  
+  &:last-child {
+    border-bottom: none;
+  }
+`;
+
+const SavedSearchTitle = styled.div`
+  font-weight: 500;
+  color: #0c3b5e;
+`;
+
+const SavedSearchInfo = styled.div`
+  font-size: 0.8rem;
+  color: #666;
+  margin-top: 0.3rem;
+`;
+
+const SavedSearchActions = styled.div`
+  display: flex;
+  gap: 0.5rem;
+`;
+
+// Fix the color props in SavedSearchAction styled component
+const SavedSearchAction = styled.button<{ color?: string }>`
+  background: none;
+  border: none;
+  font-size: 0.9rem;
+  cursor: pointer;
+  color: #666;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+    color: ${(props) => props.color || '#0c3b5e'};
+  }
 `;
 
 const ProgramsPage: React.FC = () => {
@@ -1539,6 +1876,106 @@ const ProgramsPage: React.FC = () => {
     };
   }, [showFilters]);
 
+  // Add new state variables near the top of the component with the other state variables
+  const [savedSearches, setSavedSearches] = useLocalStorage<Array<{
+    id: string;
+    name: string;
+    filters: typeof filters;
+    programTypes: typeof programTypes;
+    searchQuery: string;
+    sortOption: SortOption;
+    dateCreated: string;
+  }>>('saved_searches', []);
+
+  const [showSavedSearches, setShowSavedSearches] = useState<boolean>(false);
+  const [showSaveSearchModal, setShowSaveSearchModal] = useState<boolean>(false);
+  const [saveSearchName, setSaveSearchName] = useState<string>('');
+  const savedSearchesRef = useRef<HTMLDivElement>(null);
+
+  // Add functions to handle saved searches
+  const handleSaveSearch = () => {
+    setShowSaveSearchModal(true);
+    setSaveSearchName(`Search on ${new Date().toLocaleString()}`);
+  };
+
+  const submitSaveSearch = () => {
+    const newSavedSearch = {
+      id: Date.now().toString(),
+      name: saveSearchName,
+      filters: {...filters},
+      programTypes: {...programTypes},
+      searchQuery,
+      sortOption,
+      dateCreated: new Date().toISOString()
+    };
+    
+    setSavedSearches([...savedSearches, newSavedSearch]);
+    setShowSaveSearchModal(false);
+    
+    // Show a confirmation message or toast
+    alert(`Search "${saveSearchName}" has been saved!`);
+  };
+
+  const applySavedSearch = (savedSearch: typeof savedSearches[0]) => {
+    setFilters(savedSearch.filters);
+    setProgramTypes(savedSearch.programTypes);
+    setSearchQuery(savedSearch.searchQuery);
+    setSortOption(savedSearch.sortOption);
+    setCurrentPage(1);
+    
+    // Also update the temp states
+    setTempFilters(savedSearch.filters);
+    setTempProgramTypes(savedSearch.programTypes);
+    setTempSortOption(savedSearch.sortOption);
+    
+    // Clear cache and reload
+    clearProgramsCache();
+    setLoading(true);
+    
+    // Hide the saved searches panel
+    setShowSavedSearches(false);
+  };
+
+  const deleteSavedSearch = (id: string) => {
+    const confirmed = window.confirm("Are you sure you want to delete this saved search?");
+    if (confirmed) {
+      setSavedSearches(savedSearches.filter(search => search.id !== id));
+    }
+  };
+
+  // Add click outside handler for saved searches panel
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        showSavedSearches && 
+        savedSearchesRef.current && 
+        !savedSearchesRef.current.contains(event.target as Node)
+      ) {
+        setShowSavedSearches(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showSavedSearches]);
+
+  // Update the NoResultsMessage component
+  const NoResultsContent = () => (
+    <NoResultsMessage>
+      <FontAwesomeIcon icon={faSearch} size="2x" />
+      <div>No programs found matching your criteria</div>
+      <div style={{ fontSize: '0.9rem', maxWidth: '500px' }}>
+        Try adjusting your filters or search terms to find more programs. 
+        You can clear all filters to see all available programs.
+      </div>
+      <RetryButton onClick={clearAllFilters}>
+        Clear All Filters
+      </RetryButton>
+    </NoResultsMessage>
+  );
+
   if (loading) {
     return <ProgramsLoadingSkeleton />;
   }
@@ -1586,27 +2023,92 @@ const ProgramsPage: React.FC = () => {
       <SearchContainer>
         <SearchFilterRow>
           <SearchInputWrapper>
-        <SearchIcon>
-          <FontAwesomeIcon icon={faSearch} />
-        </SearchIcon>
-        <SearchInput 
-          type="text" 
-              placeholder="Search programs, colleges, or descriptions (press Enter to search)" 
+            <SearchIcon>
+              <FontAwesomeIcon icon={faSearch} />
+            </SearchIcon>
+            <SearchInput 
+              type="text" 
+              placeholder="Search for programs, universities, or subject areas..." 
               value={searchInput}
-          onChange={handleSearchChange}
+              onChange={handleSearchChange}
               onKeyPress={handleSearchKeyPress}
               onFocus={() => searchInput.length >= 2 && suggestions.length > 0 && setShowSuggestions(true)}
               onBlur={() => setTimeout(() => handleClickOutside(), 200)}
             />
           </SearchInputWrapper>
           
-          <FilterButton 
-            ref={filterButtonRef}
-            onClick={toggleFilters}
-          >
-            <FontAwesomeIcon icon={faFilter} />
-            Filter {activeFilterCount > 0 && `(${activeFilterCount})`}
-          </FilterButton>
+          <div style={{ display: 'flex', gap: '0.8rem' }}>
+            {(searchQuery || activeFilterCount > 0) && (
+              <SaveSearchButton onClick={handleSaveSearch}>
+                <FontAwesomeIcon icon={faBookmark} />
+                Save Search
+              </SaveSearchButton>
+            )}
+            
+            {savedSearches.length > 0 && (
+              <div style={{ position: 'relative' }}>
+                <SavedSearchesButton onClick={() => setShowSavedSearches(!showSavedSearches)}>
+                  <FontAwesomeIcon icon={faHistory} />
+                  Saved Searches
+                </SavedSearchesButton>
+                
+                {showSavedSearches && (
+                  <SavedSearchesPanel
+                    key="saved-searches-panel"
+                    ref={savedSearchesRef}
+                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <h3 style={{ margin: '0 0 1rem 0', color: '#0c3b5e' }}>Your Saved Searches</h3>
+                    
+                    {savedSearches.map(search => (
+                      <SavedSearchItem key={search.id}>
+                        <div>
+                          <SavedSearchTitle>{search.name}</SavedSearchTitle>
+                          <SavedSearchInfo>
+                            {new Date(search.dateCreated).toLocaleDateString()}
+                            {' • '}
+                            {Object.values(search.filters).filter(Boolean).length} filters
+                          </SavedSearchInfo>
+                        </div>
+                        <SavedSearchActions>
+                          <SavedSearchAction 
+                            title="Apply this search"
+                            onClick={() => applySavedSearch(search)}
+                          >
+                            <FontAwesomeIcon icon={faSearch} />
+                          </SavedSearchAction>
+                          <SavedSearchAction 
+                            title="Delete this search"
+                            onClick={() => deleteSavedSearch(search.id)}
+                            color="#e74c3c"
+                          >
+                            <FontAwesomeIcon icon={faTrash} />
+                          </SavedSearchAction>
+                        </SavedSearchActions>
+                      </SavedSearchItem>
+                    ))}
+                    
+                    {savedSearches.length === 0 && (
+                      <div style={{ padding: '1rem', textAlign: 'center', color: '#666' }}>
+                        No saved searches yet
+                      </div>
+                    )}
+                  </SavedSearchesPanel>
+                )}
+              </div>
+            )}
+            
+            <FilterButton 
+              ref={filterButtonRef}
+              onClick={toggleFilters}
+            >
+              <FontAwesomeIcon icon={faFilter} />
+              Filter {activeFilterCount > 0 && `(${activeFilterCount})`}
+            </FilterButton>
+          </div>
         </SearchFilterRow>
         
         {showSuggestions && (
@@ -1653,21 +2155,23 @@ const ProgramsPage: React.FC = () => {
         )}
       
       {showFilters && (
-          <FiltersContainer ref={filtersRef}>
-          <FilterHeader>
-            <FilterTitle>
-              <FontAwesomeIcon icon={faFilter} />
+          <FiltersContainer 
+            ref={filtersRef}
+          >
+            <FilterHeader>
+              <FilterTitle>
+                <FontAwesomeIcon icon={faFilter} />
                 Filter & Sort Programs
-            </FilterTitle>
+              </FilterTitle>
+              
+              {activeFilterCount > 0 && (
+                <ClearFiltersButton onClick={clearAllFilters}>
+                  <FontAwesomeIcon icon={faTimes} />
+                  Clear All Filters
+                </ClearFiltersButton>
+              )}
+            </FilterHeader>
             
-            {activeFilterCount > 0 && (
-              <ClearFiltersButton onClick={clearAllFilters}>
-                <FontAwesomeIcon icon={faTimes} />
-                Clear All Filters
-              </ClearFiltersButton>
-            )}
-          </FilterHeader>
-          
             {/* Sort Options */}
             <FilterGroup>
               <FilterGroupTitle>
@@ -1956,7 +2460,7 @@ const ProgramsPage: React.FC = () => {
             >
               Apply Filters
             </FilterButton>
-        </FiltersContainer>
+          </FiltersContainer>
         )}
       </SearchContainer>
       
@@ -2027,9 +2531,7 @@ const ProgramsPage: React.FC = () => {
             <ProgramCard key={program.id} program={program} />
           ))
         ) : (
-          <NoResultsMessage>
-            No programs found matching your criteria. Please try a different search or filter.
-          </NoResultsMessage>
+          <NoResultsContent />
         )}
       </ProgramsGrid>
       
@@ -2066,13 +2568,23 @@ const ProgramsPage: React.FC = () => {
               <>
                 Page {currentPage} of {totalPages}: Showing <strong>{getCurrentPagePrograms().length}</strong> of <strong>{totalFilteredResults}</strong> programs
                 {lastAPIResult.hasExtraPrograms && (
-                  <span style={{ marginLeft: '8px', color: '#f39c12', fontSize: '0.8rem' }}>
+                  <span style={{ marginLeft: '8px', color: '#f39c12', fontSize: '0.8rem', fontStyle: 'italic' }}>
                     (includes {lastAPIResult.extraProgramsCount} from next page)
                   </span>
                 )}
               </>
             )}
-            {loading && <span style={{ marginLeft: '10px', color: '#f39c12' }}>Loading...</span>}
+            {loading && (
+              <span style={{ 
+                marginLeft: '10px', 
+                color: '#f39c12', 
+                display: 'inline-flex', 
+                alignItems: 'center', 
+                gap: '5px' 
+              }}>
+                <i className="fa fa-spinner fa-spin"></i> Loading...
+              </span>
+            )}
           </PageInfo>
         </PaginationContainer>
       )}
