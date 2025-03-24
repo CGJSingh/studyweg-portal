@@ -68,7 +68,7 @@ axiosInstance.interceptors.response.use(
 );
 
 // Cache for programs to reduce API calls
-const programsCache = new Map<string, { programs: Program[], totalPages: number }>();
+const programsCache = new Map<string, { programs: Program[], totalPages: number, totalCount?: number }>();
 
 // Clear cache every 15 minutes
 const CACHE_DURATION = 15 * 60 * 1000; // 15 minutes in milliseconds
@@ -181,7 +181,7 @@ export const fetchPrograms = async (
     forceRefresh?: boolean,
     extraParams?: Record<string, string>
   }
-): Promise<{ programs: Program[], totalPages: number }> => {
+): Promise<{ programs: Program[], totalPages: number, totalCount?: number }> => {
   const { perPage = 12, forceRefresh = false, extraParams = {} } = options || {};
   
   // Check cache first if not forcing refresh
@@ -221,8 +221,11 @@ export const fetchPrograms = async (
       const programs = products.map(transformProduct);
       const totalPages = parseInt(response.headers['x-wp-totalpages'] || '1');
       
+      // Extract total count from headers if available
+      const totalCount = parseInt(response.headers['x-wp-total'] || '0');
+      
       // Update cache
-      const result = { programs, totalPages };
+      const result = { programs, totalPages, totalCount };
       programsCache.set(`page_${page}_${perPage}`, result);
       
       return result;
@@ -248,8 +251,11 @@ export const fetchPrograms = async (
           // For proxy requests, we might not have headers, so fallback to estimation
           const totalPages = parseInt(proxyResponse.headers?.['x-wp-totalpages'] || Math.ceil(products.length / perPage) || 1);
           
+          // Extract total count from headers if available, otherwise estimate
+          const totalCount = parseInt(proxyResponse.headers?.['x-wp-total'] || (totalPages * perPage).toString());
+          
           // Update cache
-          const result = { programs, totalPages };
+          const result = { programs, totalPages, totalCount };
           programsCache.set(`page_${page}_${perPage}`, result);
           
           return result;
@@ -265,13 +271,15 @@ export const fetchPrograms = async (
       // Use the imported samplePrograms directly instead of trying to declare it again
       const paginatedPrograms = samplePrograms.slice((page - 1) * perPage, page * perPage);
       const calculatedTotalPages = Math.ceil(samplePrograms.length / perPage);
+      const totalCount = samplePrograms.length;
       
       // Set offline mode
       localStorage.setItem('studyweg_offline_mode', 'true');
       
       return { 
         programs: paginatedPrograms, 
-        totalPages: calculatedTotalPages 
+        totalPages: calculatedTotalPages,
+        totalCount
       };
     }
   } catch (error: any) {
@@ -284,10 +292,12 @@ export const fetchPrograms = async (
     const end = start + PER_PAGE;
     const paginatedPrograms = samplePrograms.slice(start, end);
     const totalPages = Math.ceil(samplePrograms.length / PER_PAGE);
+    const totalCount = samplePrograms.length;
     
     return {
       programs: paginatedPrograms,
-      totalPages
+      totalPages,
+      totalCount
     };
   }
 };

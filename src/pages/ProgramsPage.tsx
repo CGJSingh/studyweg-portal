@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import styled from 'styled-components';
+import { useLocation } from 'react-router-dom';
 import { fetchPrograms, clearProgramsCache, fetchAllPrograms, isOfflineMode as checkOfflineMode, setOfflineMode } from '../services/api';
 import { Program } from '../types';
 import ProgramCard from '../components/ProgramCard';
@@ -19,7 +20,7 @@ import {
   faDollarSign,
   faUniversity
 } from '@fortawesome/free-solid-svg-icons';
-import { ProgramsListSkeleton } from '../components/SkeletonLoaders';
+import { ProgramsListSkeleton as ProgramsLoadingSkeleton } from '../components/SkeletonLoaders';
 
 const PageContainer = styled.div`
   max-width: 1200px;
@@ -284,7 +285,7 @@ const RangeSlider = styled.input`
   height: 8px;
   border-radius: 4px;
   background: #e1e1e1;
-  outline: none;
+    outline: none;
   
   &::-webkit-slider-thumb {
     -webkit-appearance: none;
@@ -535,6 +536,23 @@ const OfflineLabel = styled.span`
   margin-right: 0.5rem;
 `;
 
+// Add this after the styled components and before the ProgramsPage component
+const SEARCH_DEBOUNCE_DELAY = 500; // 500ms delay
+
+const ProgramsListSkeleton = styled.div`
+  min-height: 500px;
+`;
+
+// Add a new styled component for the result count
+const ResultSummary = styled.div`
+  color: #666;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+`;
+
 const ProgramsPage: React.FC = () => {
   const [programs, setPrograms] = useState<Program[]>([]);
   const [filteredPrograms, setFilteredPrograms] = useState<Program[]>([]);
@@ -609,7 +627,7 @@ const ProgramsPage: React.FC = () => {
     feeMin: '',
     feeMax: ''
   });
-  const [sortOption, setSortOption] = useState<SortOption>('default');
+  const [sortOption, setSortOption] = useState<SortOption>('name-asc');
   
   // Add these new state variables
   const [suggestions, setSuggestions] = useState<Array<{
@@ -620,6 +638,66 @@ const ProgramsPage: React.FC = () => {
   const [showSuggestions, setShowSuggestions] = useState<boolean>(false);
 
   const [isOfflineMode, setIsOfflineMode] = useState<boolean>(false);
+
+  const location = useLocation();
+
+  // Add new state for storing the immediate search input
+  const [searchInput, setSearchInput] = useState<string>('');
+
+  // Add new state for temporary filters
+  const [tempFilters, setTempFilters] = useState<{
+    level: string;
+    duration: string;
+    country: string;
+    category: string;
+    university: string;
+    feeMin: string;
+    feeMax: string;
+  }>({
+    level: '',
+    duration: '',
+    country: '',
+    category: '',
+    university: '',
+    feeMin: '',
+    feeMax: ''
+  });
+
+  // Add temporary program types state
+  const [tempProgramTypes, setTempProgramTypes] = useState<{
+    bachelors: boolean;
+    diploma: boolean;
+    masters: boolean;
+    phd: boolean;
+    certificate: boolean;
+  }>({
+    bachelors: false,
+    diploma: false,
+    masters: false,
+    phd: false,
+    certificate: false
+  });
+
+  // Add temporary sort option state
+  const [tempSortOption, setTempSortOption] = useState<SortOption>('name-asc');
+
+  // Add a ref for the filters container
+  const filtersRef = useRef<HTMLDivElement>(null);
+  const filterButtonRef = useRef<HTMLButtonElement>(null);
+
+  // Add a new state to track total filtered results
+  const [totalFilteredResults, setTotalFilteredResults] = useState<number>(0);
+
+  // After the existing state variables, add a new state variable to store the last API result info
+  const [lastAPIResult, setLastAPIResult] = useState<{
+    programsCount: number;
+    hasExtraPrograms: boolean;
+    extraProgramsCount: number;
+  }>({
+    programsCount: 0,
+    hasExtraPrograms: false,
+    extraProgramsCount: 0
+  });
 
   // Check offline mode from localStorage on component mount
   useEffect(() => {
@@ -634,16 +712,20 @@ const ProgramsPage: React.FC = () => {
     }
   }, []);
 
-  // Extract loadPrograms outside useEffect
-  const loadPrograms = async () => {
-    try {
-      setLoading(true);
-      setError(null); // Clear previous errors
-      setIsOfflineMode(false); // Reset offline mode flag
+  // Modify the loadPrograms function to fetch additional programs if needed
+    const loadPrograms = async () => {
+      try {
+        setLoading(true);
+      setError(null);
+      setIsOfflineMode(false);
       console.log('Fetching programs for page:', currentPage);
       
       // Build extra parameters based on active filters
-      const extraParams: Record<string, string> = {};
+      const extraParams: Record<string, string> = {
+        per_page: programsPerPage.toString(),
+        page: currentPage.toString(),
+        sort: 'name' // Always sort by name ascending by default
+      };
       
       // Add filter parameters to the API call
       if (filters.level) extraParams['filter[program_level]'] = filters.level;
@@ -673,51 +755,157 @@ const ProgramsPage: React.FC = () => {
         extraParams['filter[tag]'] = activeTab === 'top' ? 'top program' : 
                                    activeTab === 'fast' ? 'fast acceptance' : 'intake offer';
       }
+
+      // Override default sorting if a different sort option is selected
+      if (sortOption !== 'default' && sortOption !== 'name-asc') {
+        const [field, direction] = sortOption.split('-');
+        extraParams['sort'] = `${direction === 'desc' ? '-' : ''}${field}`;
+      }
       
-      // First, fetch the paginated data for display with filters applied
+      // Add a timestamp to prevent caching issues
+      extraParams['timestamp'] = Date.now().toString();
+      
+      // Request that all filters be applied server-side
+      extraParams['apply_all_filters'] = 'true';
+      
+      // Add parameter to get total count
+      extraParams['include_total_count'] = 'true';
+      
+      console.log('Fetching with filters:', extraParams);
+      
+      // Fetch the filtered and paginated data
       const result = await fetchPrograms(currentPage, {
         extraParams,
         forceRefresh: true // Force refresh to ensure we get fresh data with the filters
       });
       
-      if (result.programs.length === 0) {
-        console.warn('No programs received for the current page');
-      } else {
-        console.log('Received programs:', result.programs.length);
+      // Set the total count of filtered results immediately so we can calculate valid pages
+      const resultTotalCount = 'totalCount' in result && typeof result.totalCount === 'number' 
+        ? result.totalCount 
+        : (result.totalPages * programsPerPage);
+      
+      setTotalFilteredResults(resultTotalCount);
+      
+      // Calculate the actual number of pages needed for the filtered results
+      const calculatedTotalPages = Math.max(1, Math.ceil(resultTotalCount / programsPerPage));
+      
+      // If there are no programs on the current page but we have total results > 0
+      if (result.programs.length === 0 && resultTotalCount > 0) {
+        console.log(`Current page ${currentPage} has no results but there are ${resultTotalCount} total results.`);
         
-        // Debug - check structure of the first program
-        if (result.programs.length > 0) {
-          console.log('First program structure:', JSON.stringify(result.programs[0], null, 2));
+        // If we're moving forward (or current page is beyond calculated pages)
+        if (currentPage > 1 && currentPage >= calculatedTotalPages) {
+          console.log(`Redirecting to the last page with content: ${calculatedTotalPages}`);
+          setCurrentPage(calculatedTotalPages);
+          return; // This will trigger the useEffect to reload with the valid page
+        } 
+        // If we're trying to view page 1 and it's empty, but there are results
+        else if (currentPage === 1 && calculatedTotalPages > 1) {
+          // Try page 2, as page 1 might be empty due to some filtering quirk
+          console.log(`Page 1 is empty but there are results. Trying page 2.`);
+          setCurrentPage(2);
+          return; // This will trigger the useEffect to reload with page 2
+        }
+        // If we're on a page in the middle that's empty, try to find the next page with content
+        else if (currentPage > 1 && currentPage < calculatedTotalPages) {
+          // Try the next page
+          console.log(`Page ${currentPage} is empty. Trying page ${currentPage + 1}.`);
+          setCurrentPage(currentPage + 1);
+          return; // This will trigger the useEffect to reload with the next page
         }
       }
+
+      // If we have fewer programs than the maximum per page and we're not on the last page
+      if (result.programs.length < programsPerPage && currentPage < calculatedTotalPages) {
+        console.log(`Page ${currentPage} has only ${result.programs.length} programs, fetching more from next page`);
+        
+        // Prepare to fetch additional programs from the next page
+        const nextPageParams = {...extraParams};
+        nextPageParams.page = (currentPage + 1).toString();
+        
+        try {
+          // Fetch programs from the next page to fill the empty space
+          const nextPageResult = await fetchPrograms(currentPage + 1, {
+            extraParams: nextPageParams,
+            forceRefresh: true
+          });
+          
+          // Calculate how many additional programs we need
+          const additionalNeeded = programsPerPage - result.programs.length;
+          
+          // Take only as many programs as needed from the next page
+          const additionalPrograms = nextPageResult.programs.slice(0, additionalNeeded);
+          console.log(`Fetched ${additionalPrograms.length} additional programs from page ${currentPage + 1}`);
+          
+          // Combine programs from current page and next page
+          const combinedPrograms = [...result.programs, ...additionalPrograms];
+          setPrograms(combinedPrograms);
+          setFilteredPrograms(combinedPrograms);
+          
+          // Add this line to store info about the result
+          setLastAPIResult({
+            programsCount: result.programs.length,
+            hasExtraPrograms: additionalPrograms.length > 0,
+            extraProgramsCount: additionalPrograms.length
+          });
+          
+          console.log(`Now showing ${combinedPrograms.length} programs on page ${currentPage}`);
+        } catch (nextPageError) {
+          console.error('Error fetching additional programs:', nextPageError);
+          // If we can't fetch more, just use what we have
+        setPrograms(result.programs);
+        setFilteredPrograms(result.programs);
+        }
+      } else {
+        // Normal case: just set the programs from the current page
+        if (result.programs.length === 0) {
+          console.warn('No programs received for the current page');
+        } else {
+          console.log('Received programs:', result.programs.length);
+        }
+        
+        setPrograms(result.programs);
+        setFilteredPrograms(result.programs);
+
+        // Add this line to store info about the result
+        setLastAPIResult({
+          programsCount: result.programs.length,
+          hasExtraPrograms: false,
+          extraProgramsCount: 0
+        });
+      }
       
-      setPrograms(result.programs);
-      setFilteredPrograms(result.programs);
-      setTotalPages(result.totalPages);
+      // If there are no results at all for any page
+      if (resultTotalCount === 0) {
+        console.log('No results found for the filters, staying on page 1');
+        setCurrentPage(1); // Ensure we're on page 1 to show the "no results" message
+      }
       
-      // Then, fetch all programs to extract comprehensive filter options (only if needed)
-      try {
-        // Only load all programs for filter options if we haven't already
-        if (filterOptions.levels.length === 0 || filterOptions.countries.length === 0) {
+      // Use the calculated total pages based on actual result count
+      setTotalPages(calculatedTotalPages);
+      
+      // Only fetch filter options if they haven't been loaded yet
+      if (filterOptions.levels.length === 0 || filterOptions.countries.length === 0) {
+        try {
           const allPrograms = await fetchAllPrograms();
           console.log('Fetched all programs for filters:', allPrograms.length);
           
           // Extract filter options from all programs
-          const levels = new Set<string>();
-          const durations = new Set<string>();
-          const countries = new Set<string>();
-          const categories = new Set<string>();
+        const levels = new Set<string>();
+        const durations = new Set<string>();
+        const countries = new Set<string>();
+        const categories = new Set<string>();
           const universities = new Set<string>();
-          
+        
           allPrograms.forEach(program => {
-            // Extract levels
-            const level = program.attributes?.find(attr => attr.name === "Program Level")?.options[0];
-            if (level) levels.add(level);
-            
-            // Extract durations
-            const duration = program.attributes?.find(attr => attr.name === "Duration")?.options[0];
-            if (duration) durations.add(duration);
-            
+          // Extract levels
+          const level = program.attributes?.find(attr => attr.name === "Program Level")?.options[0];
+          if (level) levels.add(level);
+          
+          // Extract durations
+          const duration = program.attributes?.find(attr => attr.name === "Duration")?.options[0];
+          if (duration) durations.add(duration);
+          
             // Extract countries from both attribute and meta_data
             if (program.attributes?.find(attr => attr.name === "Country")?.options[0]) {
               const countryAttr = program.attributes?.find(attr => attr.name === "Country" || attr.name === "pa_country")?.options[0];
@@ -727,8 +915,8 @@ const ProgramsPage: React.FC = () => {
               }
             }
             
-            if (program.institution?.location) {
-              countries.add(program.institution.location);
+          if (program.institution?.location) {
+            countries.add(program.institution.location);
               console.log('Added country from institution:', program.institution.location);
             } else {
               // Try to find location from meta_data if institution object is not available
@@ -764,51 +952,38 @@ const ProgramsPage: React.FC = () => {
                 universities.add(institutionMeta.value);
                 console.log('Added university from meta_data:', institutionMeta.value);
               }
-            }
-            
-            // Extract categories
-            program.categories.forEach(category => {
-              categories.add(category.name);
-            });
-          });
+          }
           
-          const filterOpts = {
-            levels: Array.from(levels),
-            durations: Array.from(durations),
-            countries: Array.from(countries),
+          // Extract categories
+          program.categories.forEach(category => {
+            categories.add(category.name);
+          });
+        });
+        
+        setFilterOptions({
+          levels: Array.from(levels),
+          durations: Array.from(durations),
+          countries: Array.from(countries),
             categories: Array.from(categories),
             universities: Array.from(universities)
-          };
-          
-          console.log('Filter options generated:', filterOpts);
-          setFilterOptions(filterOpts);
-        }
-      } catch (filterError) {
-        console.error('Error fetching filter options:', filterError);
-        // If we fail to fetch all programs for filters, check if we're in offline mode
-        try {
-          const offlineStatus = checkOfflineMode();
-          if (offlineStatus) {
-            setIsOfflineMode(true);
-            console.log('Setting offline mode based on localStorage flag');
-          }
-        } catch (err) {
-          console.error('Error checking offline mode:', err);
+          });
+        } catch (filterError) {
+          console.error('Error fetching filter options:', filterError);
+          checkOfflineMode();
         }
       }
     } catch (mainError) {
       console.error('Error in main data fetch:', mainError);
       setError('Failed to load program data. Using sample data instead.');
       setIsOfflineMode(true);
-      setOfflineMode(true); // Set the offline mode flag in localStorage
-      // Set empty programs to avoid undefined errors if no fallback
+      setOfflineMode(true);
       setPrograms([]);
       setFilteredPrograms([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
+      } finally {
+        setLoading(false);
+      }
+    };
+    
   // Add this function for retrying
   const handleRetry = () => {
     setLoading(true);
@@ -831,13 +1006,15 @@ const ProgramsPage: React.FC = () => {
   useEffect(() => {
     // When filters or search change, reset to page 1 and reload data
     if (currentPage === 1) {
-      // Already on page 1, just reload
+      // Already on page 1, just reload with new filters
+      // Clear cache to ensure we get fresh data with the new filters
+      clearProgramsCache();
       loadPrograms();
     } else {
       // Not on page 1, need to reset page which will trigger the other useEffect
       setCurrentPage(1);
     }
-  }, [searchQuery, activeTab, filters, sortOption, programTypes]);  // eslint-disable-line react-hooks/exhaustive-deps
+  }, [searchQuery, activeTab, filters, sortOption, programTypes]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Keep the existing filter effect for client-side filtering
   useEffect(() => {
@@ -1002,15 +1179,31 @@ const ProgramsPage: React.FC = () => {
     setFilteredPrograms(filtered);
   }, [searchQuery, activeTab, filters, sortOption, programs, programTypes]);
 
-  // Add this new useEffect to generate suggestions based on search query
+  // Add this new function to handle Enter key press
+  const handleSearchKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      setSearchQuery(searchInput);
+      setCurrentPage(1);
+      setShowSuggestions(false);
+    }
+  };
+
+  // Update the handleSearchChange function
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setSearchInput(value);
+  };
+
+  // Update the suggestions useEffect to use searchInput
   useEffect(() => {
-    if (!searchQuery || searchQuery.length < 2) {
+    if (!searchInput || searchInput.length < 2) {
       setSuggestions([]);
       setShowSuggestions(false);
       return;
     }
 
-    const query = searchQuery.toLowerCase();
+    // Generate suggestions based on searchInput
+    const query = searchInput.toLowerCase();
     const newSuggestions: Array<{
       id: number;
       text: string;
@@ -1020,7 +1213,7 @@ const ProgramsPage: React.FC = () => {
     // Limit to 10 suggestions total
     const maxSuggestions = 10;
     
-    // Add program name suggestions
+    // Add program name suggestions first (prioritize these)
     programs.forEach(program => {
       if (newSuggestions.length >= maxSuggestions) return;
       
@@ -1034,59 +1227,60 @@ const ProgramsPage: React.FC = () => {
       }
     });
     
-    // Add college/institution suggestions
-    const collegesAdded = new Set<string>();
-    programs.forEach(program => {
-      if (newSuggestions.length >= maxSuggestions) return;
-      
-      if (program.institution?.name) {
-        const college = program.institution.name;
-        if (
-          college.toLowerCase().includes(query) && 
-          !collegesAdded.has(college.toLowerCase())
-        ) {
-          collegesAdded.add(college.toLowerCase());
-          newSuggestions.push({
-            id: program.id,
-            text: college,
-            type: 'college'
-          });
-        }
-      }
-    });
-    
-    // Add short descriptions that match
-    programs.forEach(program => {
-      if (newSuggestions.length >= maxSuggestions) return;
-      
-      const description = program.short_description;
-      if (
-        description && 
-        description.toLowerCase().includes(query) &&
-        description.length > 10
-      ) {
-        // Trim the description to a reasonable length
-        const truncatedDesc = description.length > 50 
-          ? description.substring(0, 50) + '...'
-          : description;
-          
-        newSuggestions.push({
-          id: program.id,
-          text: truncatedDesc,
-          type: 'description'
-        });
-      }
-    });
-    
     setSuggestions(newSuggestions);
     setShowSuggestions(newSuggestions.length > 0);
-  }, [searchQuery, programs]);
+  }, [searchInput, programs]);
 
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchQuery(e.target.value);
-    setCurrentPage(1); // Reset to page 1 when searching
+  // Update the handleSelectSuggestion function
+  const handleSelectSuggestion = (suggestion: { id: number; text: string; type: string }) => {
+    setSearchInput(suggestion.text);
+    setSearchQuery(suggestion.text);
+    setCurrentPage(1);
+    setShowSuggestions(false);
   };
 
+  // Effect to handle navigation from program detail page
+  useEffect(() => {
+    if (location.state) {
+      console.log('Received navigation state:', location.state);
+      const { filterType, value } = location.state as { filterType: string, value: string };
+      
+      if (filterType && value) {
+        console.log(`Applying filter: ${filterType} = ${value}`);
+        // Reset other filters first
+        clearAllFilters();
+        
+        // Apply the specific filter
+        if (filterType === 'category' || 
+            filterType === 'level' || 
+            filterType === 'duration' || 
+            filterType === 'country' || 
+            filterType === 'university') {
+          handleFilterChange(filterType as keyof typeof filters, value);
+          console.log('Filter applied successfully');
+        } else if (filterType === 'tag') {
+          // Handle tag filtering by setting the appropriate tab
+          if (value.toLowerCase() === 'top program') {
+            setActiveTab('top');
+          } else if (value.toLowerCase() === 'fast acceptance') {
+            setActiveTab('fast');
+          } else if (value.toLowerCase() === 'intake offer') {
+            setActiveTab('intake');
+          } else {
+            // For other tags, set a search query
+            setSearchQuery(value);
+          }
+          console.log('Tag filtering applied successfully');
+        }
+        
+        // Clear the location state after applying filters
+        window.history.replaceState({}, document.title);
+        console.log('Location state cleared');
+      }
+    }
+  }, [location]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Modify the handleTabChange function
   const handleTabChange = (tab: TabType) => {
     setActiveTab(tab);
     setCurrentPage(1); // Reset to page 1 when changing tabs
@@ -1094,146 +1288,158 @@ const ProgramsPage: React.FC = () => {
   
   // New handlers for filters and sorting
   const toggleFilters = () => {
+    if (!showFilters) {
+      // When opening, set temporary states to current values
+      setTempFilters({...filters});
+      setTempProgramTypes({...programTypes});
+      setTempSortOption(sortOption);
+    }
     setShowFilters(!showFilters);
   };
   
   const handleFilterChange = (filterType: keyof typeof filters, value: string) => {
-    setFilters(prev => ({
+    setTempFilters(prev => ({
       ...prev,
       [filterType]: value
     }));
-    setCurrentPage(1); // Reset to page 1 when changing filters
   };
   
   const handleSortChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setSortOption(e.target.value as SortOption);
-    setCurrentPage(1); // Reset to page 1 when changing sort
+    setTempSortOption(e.target.value as SortOption);
   };
   
-  const clearFilter = (filterType: keyof typeof filters) => {
-    setFilters(prev => ({
-      ...prev,
-      [filterType]: ''
-    }));
-  };
-  
-  const clearAllFilters = () => {
-    setFilters({
-      level: '',
-      duration: '',
-      country: '',
-      category: '',
-      university: '',
-      feeMin: '',
-      feeMax: ''
-    });
-    
-    // Reset program types
-    setProgramTypes({
-      bachelors: false,
-      diploma: false,
-      masters: false,
-      phd: false,
-      certificate: false
-    });
-    
-    // Reset fee range
-    setFeeRange({
-      ...feeRange,
-      currentMin: feeRange.min,
-      currentMax: feeRange.max
-    });
-    
-    setSortOption('default');
-  };
-  
-  // Handle program type checkbox changes
   const handleProgramTypeChange = (type: ProgramType, checked: boolean) => {
-    setProgramTypes(prev => ({
+    setTempProgramTypes(prev => ({
       ...prev,
       [type]: checked
     }));
-    setCurrentPage(1);
   };
   
-  // Handle fee range slider changes
   const handleFeeRangeChange = (type: 'min' | 'max', value: number) => {
     setFeeRange(prev => ({
       ...prev,
       [type === 'min' ? 'currentMin' : 'currentMax']: value
     }));
     
-    // Update the filter values
-    setFilters(prev => ({
+    setTempFilters(prev => ({
       ...prev,
       [type === 'min' ? 'feeMin' : 'feeMax']: value.toString()
     }));
-    
-    setCurrentPage(1);
   };
   
-  // Handle fee range changes
   const handleFeeMinChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setFilters(prev => ({
-      ...prev,
-      feeMin: value
-    }));
+    const value = parseInt(e.target.value) || 0;
     setFeeRange(prev => ({
       ...prev,
-      currentMin: value ? parseInt(value) : 0
+      currentMin: value
     }));
-    setCurrentPage(1);
+    setTempFilters(prev => ({
+      ...prev,
+      feeMin: value.toString()
+    }));
   };
 
   const handleFeeMaxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setFilters(prev => ({
-      ...prev,
-      feeMax: value
-    }));
+    const value = parseInt(e.target.value) || feeRange.max;
     setFeeRange(prev => ({
       ...prev,
-      currentMax: value ? parseInt(value) : feeRange.max
+      currentMax: value
     }));
-    setCurrentPage(1);
+    setTempFilters(prev => ({
+      ...prev,
+      feeMax: value.toString()
+    }));
   };
 
   const handleUniversityChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setFilters(prev => ({
+    setTempFilters(prev => ({
       ...prev,
       university: e.target.value
     }));
-    setCurrentPage(1);
   };
   
   // Get active filter count
   const activeFilterCount = Object.values(filters).filter(value => value !== '').length;
 
-  // Function to handle page change
+  // Update the isValidPage function to be more accurate
+  const isValidPage = (page: number): boolean => {
+    // Invalid if below 1 or above calculated total pages
+    if (page < 1) return false;
+    
+    // Calculate how many pages should actually have content based on total results
+    const calculatedTotalPages = Math.ceil(totalFilteredResults / programsPerPage);
+    
+    // Page is invalid if it's beyond the number of pages needed for the filtered results
+    if (page > calculatedTotalPages) return false;
+    
+    // If we have no results, only page 1 is valid (to show "no results" message)
+    if (totalFilteredResults === 0) {
+      return page === 1;
+    }
+    
+    return true;
+  };
+
+  // Update the handlePageChange function to skip to the next page with content
   const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-    setLoading(true); // Set loading to true when changing pages
-    // No need to clear cache here as we'll force refresh in loadPrograms
+    if (!isValidPage(page) || page === currentPage) return;
+    
+    // When clicking "next" - find the next valid page with content
+    if (page > currentPage) {
+      findNextPageWithContent(page);
+    } 
+    // When clicking "previous" - find the previous valid page with content
+    else if (page < currentPage) {
+      findPreviousPageWithContent(page);
+    }
+  };
+
+  // New function to find the next valid page with content
+  const findNextPageWithContent = (startPage: number) => {
+    // Calculate how many pages should actually have content based on total results
+    const calculatedTotalPages = Math.ceil(totalFilteredResults / programsPerPage);
+    
+    // Set loading state immediately for better UX
+    setLoading(true);
+    
+    // Navigate to the page and let the loadPrograms function handle redirecting if empty
+    setCurrentPage(startPage);
     window.scrollTo(0, 0); // Scroll to top when changing page
   };
 
-  // Get current programs for the current page - we'll directly use the filtered programs
-  // instead of slicing, since the API is already returning paginated data
+  // New function to find the previous valid page with content
+  const findPreviousPageWithContent = (startPage: number) => {
+    // Set loading state immediately for better UX
+    setLoading(true);
+    
+    // Navigate to the page and let the loadPrograms function handle redirecting if empty
+    setCurrentPage(startPage);
+    window.scrollTo(0, 0); // Scroll to top when changing page
+  };
+
+  // Get current programs for the current page
   const getCurrentPagePrograms = () => {
     // When using API pagination, simply return the filtered programs
     // since the API already returns the right page
     return filteredPrograms;
   };
 
-  // Calculate page numbers for pagination display
+  // Update the getPageNumbers function to generate valid page numbers only
   const getPageNumbers = () => {
     const pageNumbers = [];
     const maxPageButtons = 5;
     
-    if (totalPages <= maxPageButtons) {
+    // Calculate actual total pages based on filtered results
+    const calculatedTotalPages = Math.max(1, Math.ceil(totalFilteredResults / programsPerPage));
+    
+    // If no results or only one page, return empty or just page 1
+    if (calculatedTotalPages <= 1) {
+      return calculatedTotalPages === 1 ? [1] : [];
+    }
+    
+    if (calculatedTotalPages <= maxPageButtons) {
       // If we have fewer pages than max buttons, show all pages
-      for (let i = 1; i <= totalPages; i++) {
+      for (let i = 1; i <= calculatedTotalPages; i++) {
         pageNumbers.push(i);
       }
     } else {
@@ -1241,8 +1447,8 @@ const ProgramsPage: React.FC = () => {
       let startPage = Math.max(1, currentPage - Math.floor(maxPageButtons / 2));
       let endPage = startPage + maxPageButtons - 1;
       
-      if (endPage > totalPages) {
-        endPage = totalPages;
+      if (endPage > calculatedTotalPages) {
+        endPage = calculatedTotalPages;
         startPage = Math.max(1, endPage - maxPageButtons + 1);
       }
       
@@ -1254,26 +1460,87 @@ const ProgramsPage: React.FC = () => {
     return pageNumbers;
   };
 
-  // Add this function to handle selecting a suggestion
-  const handleSelectSuggestion = (suggestion: { id: number; text: string; type: string }) => {
-    if (suggestion.type === 'program' || suggestion.type === 'college') {
-      setSearchQuery(suggestion.text);
-    } else {
-      // For descriptions, we set a shorter version as the search query
-      const words = suggestion.text.split(' ');
-      const shortQuery = words.slice(0, 3).join(' ');
-      setSearchQuery(shortQuery);
-    }
-    setShowSuggestions(false);
-  };
-  
   // Add this function to hide suggestions when clicking outside
   const handleClickOutside = () => {
     setShowSuggestions(false);
   };
 
+  // Update the applyFilters function
+  const applyFilters = () => {
+    // Apply all temporary states to actual states
+    setFilters(tempFilters);
+    setProgramTypes(tempProgramTypes);
+    setSortOption(tempSortOption);
+    
+    // Always reset to page 1 when filters are applied
+    setCurrentPage(1);
+    
+    // Important: We need to clear the cache to make sure we get fresh data
+    clearProgramsCache();
+    
+    // Close filter panel
+    setShowFilters(false);
+    
+    // Load new programs with the updated filters - this will get called via the useEffect
+    // but we set loading state immediately for better UX
+    setLoading(true);
+    
+    // Reset total filtered results until new data is loaded
+    setTotalFilteredResults(0);
+  };
+
+  // Update clear filters function
+  const clearAllFilters = () => {
+    const emptyFilters = {
+      level: '',
+      duration: '',
+      country: '',
+      category: '',
+      university: '',
+      feeMin: '',
+      feeMax: ''
+    };
+
+    const emptyProgramTypes = {
+      bachelors: false,
+      diploma: false,
+      masters: false,
+      phd: false,
+      certificate: false
+    };
+
+    // Update both temporary and actual states
+    setTempFilters(emptyFilters);
+    setFilters(emptyFilters);
+    setTempProgramTypes(emptyProgramTypes);
+    setProgramTypes(emptyProgramTypes);
+    setTempSortOption('name-asc');
+    setSortOption('name-asc');
+    setCurrentPage(1);
+  };
+
+  // Add a click outside handler to close the filters panel
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        showFilters && 
+        filtersRef.current && 
+        !filtersRef.current.contains(event.target as Node) &&
+        filterButtonRef.current &&
+        !filterButtonRef.current.contains(event.target as Node)
+      ) {
+        setShowFilters(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showFilters]);
+
   if (loading) {
-    return <ProgramsListSkeleton />;
+    return <ProgramsLoadingSkeleton />;
   }
 
   if (error) {
@@ -1319,20 +1586,24 @@ const ProgramsPage: React.FC = () => {
       <SearchContainer>
         <SearchFilterRow>
           <SearchInputWrapper>
-            <SearchIcon>
-              <FontAwesomeIcon icon={faSearch} />
-            </SearchIcon>
-            <SearchInput 
-              type="text" 
-              placeholder="Search programs, colleges, or descriptions" 
-              value={searchQuery}
-              onChange={handleSearchChange}
-              onFocus={() => searchQuery.length >= 2 && suggestions.length > 0 && setShowSuggestions(true)}
+        <SearchIcon>
+          <FontAwesomeIcon icon={faSearch} />
+        </SearchIcon>
+        <SearchInput 
+          type="text" 
+              placeholder="Search programs, colleges, or descriptions (press Enter to search)" 
+              value={searchInput}
+          onChange={handleSearchChange}
+              onKeyPress={handleSearchKeyPress}
+              onFocus={() => searchInput.length >= 2 && suggestions.length > 0 && setShowSuggestions(true)}
               onBlur={() => setTimeout(() => handleClickOutside(), 200)}
             />
           </SearchInputWrapper>
           
-          <FilterButton onClick={toggleFilters}>
+          <FilterButton 
+            ref={filterButtonRef}
+            onClick={toggleFilters}
+          >
             <FontAwesomeIcon icon={faFilter} />
             Filter {activeFilterCount > 0 && `(${activeFilterCount})`}
           </FilterButton>
@@ -1343,7 +1614,7 @@ const ProgramsPage: React.FC = () => {
             {suggestions.length > 0 ? (
               suggestions.map((suggestion, index) => {
                 // Highlight the matching part of the suggestion
-                const query = searchQuery.toLowerCase();
+                const query = searchInput.toLowerCase();
                 const text = suggestion.text;
                 const lowerText = text.toLowerCase();
                 const matchIndex = lowerText.indexOf(query);
@@ -1380,23 +1651,23 @@ const ProgramsPage: React.FC = () => {
             )}
           </SuggestionsContainer>
         )}
-        
-        {showFilters && (
-          <FiltersContainer>
-            <FilterHeader>
-              <FilterTitle>
-                <FontAwesomeIcon icon={faFilter} />
+      
+      {showFilters && (
+          <FiltersContainer ref={filtersRef}>
+          <FilterHeader>
+            <FilterTitle>
+              <FontAwesomeIcon icon={faFilter} />
                 Filter & Sort Programs
-              </FilterTitle>
-              
-              {activeFilterCount > 0 && (
-                <ClearFiltersButton onClick={clearAllFilters}>
-                  <FontAwesomeIcon icon={faTimes} />
-                  Clear All Filters
-                </ClearFiltersButton>
-              )}
-            </FilterHeader>
+            </FilterTitle>
             
+            {activeFilterCount > 0 && (
+              <ClearFiltersButton onClick={clearAllFilters}>
+                <FontAwesomeIcon icon={faTimes} />
+                Clear All Filters
+              </ClearFiltersButton>
+            )}
+          </FilterHeader>
+          
             {/* Sort Options */}
             <FilterGroup>
               <FilterGroupTitle>
@@ -1404,7 +1675,7 @@ const ProgramsPage: React.FC = () => {
                 Sort By
               </FilterGroupTitle>
               <FilterSelect 
-                value={sortOption} 
+                value={tempSortOption} 
                 onChange={handleSortChange}
               >
                 <option value="default">Default</option>
@@ -1429,7 +1700,7 @@ const ProgramsPage: React.FC = () => {
                 <CheckboxLabel>
                   <input 
                     type="checkbox" 
-                    checked={programTypes.bachelors}
+                    checked={tempProgramTypes.bachelors}
                     onChange={(e) => handleProgramTypeChange('bachelors', e.target.checked)}
                   />
                   Bachelor's Degree
@@ -1437,7 +1708,7 @@ const ProgramsPage: React.FC = () => {
                 <CheckboxLabel>
                   <input 
                     type="checkbox" 
-                    checked={programTypes.diploma}
+                    checked={tempProgramTypes.diploma}
                     onChange={(e) => handleProgramTypeChange('diploma', e.target.checked)}
                   />
                   Diploma Programs
@@ -1445,7 +1716,7 @@ const ProgramsPage: React.FC = () => {
                 <CheckboxLabel>
                   <input 
                     type="checkbox" 
-                    checked={programTypes.masters}
+                    checked={tempProgramTypes.masters}
                     onChange={(e) => handleProgramTypeChange('masters', e.target.checked)}
                   />
                   Master's Degree
@@ -1453,7 +1724,7 @@ const ProgramsPage: React.FC = () => {
                 <CheckboxLabel>
                   <input 
                     type="checkbox" 
-                    checked={programTypes.phd}
+                    checked={tempProgramTypes.phd}
                     onChange={(e) => handleProgramTypeChange('phd', e.target.checked)}
                   />
                   PhD / Doctorate
@@ -1461,7 +1732,7 @@ const ProgramsPage: React.FC = () => {
                 <CheckboxLabel>
                   <input 
                     type="checkbox" 
-                    checked={programTypes.certificate}
+                    checked={tempProgramTypes.certificate}
                     onChange={(e) => handleProgramTypeChange('certificate', e.target.checked)}
                   />
                   Certificate Programs
@@ -1499,7 +1770,7 @@ const ProgramsPage: React.FC = () => {
                     type="number" 
                     placeholder="Min" 
                     min="0"
-                    value={filters.feeMin}
+                    value={feeRange.currentMin}
                     onChange={handleFeeMinChange}
                   />
                   <span>-</span>
@@ -1507,7 +1778,7 @@ const ProgramsPage: React.FC = () => {
                     type="number" 
                     placeholder="Max" 
                     min="0"
-                    value={filters.feeMax}
+                    value={feeRange.currentMax}
                     onChange={handleFeeMaxChange}
                   />
                 </RangeInputs>
@@ -1521,7 +1792,7 @@ const ProgramsPage: React.FC = () => {
                 Duration
               </FilterGroupTitle>
               <FilterSelect 
-                value={filters.duration} 
+                value={tempFilters.duration} 
                 onChange={(e) => handleFilterChange('duration', e.target.value)}
               >
                 <option value="">All Durations</option>
@@ -1538,14 +1809,14 @@ const ProgramsPage: React.FC = () => {
                 Country
               </FilterGroupTitle>
               <FilterSelect 
-                value={filters.country} 
+                value={tempFilters.country} 
                 onChange={(e) => handleFilterChange('country', e.target.value)}
               >
                 <option value="">All Countries</option>
                 {filterOptions.countries.map(country => {
                   if (!country) return null; // Skip empty values
                   return (
-                    <option key={country} value={country}>{country}</option>
+                  <option key={country} value={country}>{country}</option>
                   );
                 })}
               </FilterSelect>
@@ -1563,7 +1834,7 @@ const ProgramsPage: React.FC = () => {
                 University
               </FilterGroupTitle>
               <FilterSelect 
-                value={filters.university} 
+                value={tempFilters.university} 
                 onChange={handleUniversityChange}
               >
                 <option value="">All Universities</option>
@@ -1588,7 +1859,7 @@ const ProgramsPage: React.FC = () => {
                 Category
               </FilterGroupTitle>
               <FilterSelect 
-                value={filters.category} 
+                value={tempFilters.category} 
                 onChange={(e) => handleFilterChange('category', e.target.value)}
               >
                 <option value="">All Categories</option>
@@ -1597,32 +1868,32 @@ const ProgramsPage: React.FC = () => {
                 ))}
               </FilterSelect>
             </FilterGroup>
-            
+          
             {/* Active Filters */}
-            {activeFilterCount > 0 && (
-              <ActiveFiltersContainer>
-                {filters.level && (
-                  <ActiveFilter>
-                    Level: {filters.level}
-                    <button onClick={() => clearFilter('level')}>
-                      <FontAwesomeIcon icon={faTimes} />
-                    </button>
-                  </ActiveFilter>
-                )}
-                
-                {filters.duration && (
-                  <ActiveFilter>
-                    Duration: {filters.duration}
-                    <button onClick={() => clearFilter('duration')}>
-                      <FontAwesomeIcon icon={faTimes} />
-                    </button>
-                  </ActiveFilter>
-                )}
-                
-                {filters.country && (
-                  <ActiveFilter>
-                    Country: {filters.country}
-                    <button onClick={() => clearFilter('country')}>
+          {activeFilterCount > 0 && (
+            <ActiveFiltersContainer>
+              {filters.level && (
+                <ActiveFilter>
+                  Level: {filters.level}
+                    <button onClick={() => handleFilterChange('level', '')}>
+                    <FontAwesomeIcon icon={faTimes} />
+                  </button>
+                </ActiveFilter>
+              )}
+              
+              {filters.duration && (
+                <ActiveFilter>
+                  Duration: {filters.duration}
+                    <button onClick={() => handleFilterChange('duration', '')}>
+                    <FontAwesomeIcon icon={faTimes} />
+                  </button>
+                </ActiveFilter>
+              )}
+              
+              {filters.country && (
+                <ActiveFilter>
+                  Country: {filters.country}
+                    <button onClick={() => handleFilterChange('country', '')}>
                       <FontAwesomeIcon icon={faTimes} />
                     </button>
                   </ActiveFilter>
@@ -1631,16 +1902,16 @@ const ProgramsPage: React.FC = () => {
                 {filters.university && (
                   <ActiveFilter>
                     University: {filters.university}
-                    <button onClick={() => clearFilter('university')}>
-                      <FontAwesomeIcon icon={faTimes} />
-                    </button>
-                  </ActiveFilter>
-                )}
-                
-                {filters.category && (
-                  <ActiveFilter>
-                    Category: {filters.category}
-                    <button onClick={() => clearFilter('category')}>
+                    <button onClick={() => handleFilterChange('university', '')}>
+                    <FontAwesomeIcon icon={faTimes} />
+                  </button>
+                </ActiveFilter>
+              )}
+              
+              {filters.category && (
+                <ActiveFilter>
+                  Category: {filters.category}
+                    <button onClick={() => handleFilterChange('category', '')}>
                       <FontAwesomeIcon icon={faTimes} />
                     </button>
                   </ActiveFilter>
@@ -1650,8 +1921,8 @@ const ProgramsPage: React.FC = () => {
                   <ActiveFilter>
                     Fee: {filters.feeMin ? `$${parseInt(filters.feeMin).toLocaleString()}` : '$0'} - {filters.feeMax ? `$${parseInt(filters.feeMax).toLocaleString()}` : 'Any'}
                     <button onClick={() => {
-                      clearFilter('feeMin');
-                      clearFilter('feeMax');
+                      handleFilterChange('feeMin', '');
+                      handleFilterChange('feeMax', '');
                     }}>
                       <FontAwesomeIcon icon={faTimes} />
                     </button>
@@ -1665,29 +1936,27 @@ const ProgramsPage: React.FC = () => {
                       .map(([type]) => type.charAt(0).toUpperCase() + type.slice(1))
                       .join(', ')}
                     <button onClick={() => {
-                      setProgramTypes({
-                        bachelors: false,
-                        diploma: false,
-                        masters: false,
-                        phd: false,
-                        certificate: false
-                      });
+                      handleProgramTypeChange('bachelors', false);
+                      handleProgramTypeChange('diploma', false);
+                      handleProgramTypeChange('masters', false);
+                      handleProgramTypeChange('phd', false);
+                      handleProgramTypeChange('certificate', false);
                     }}>
-                      <FontAwesomeIcon icon={faTimes} />
-                    </button>
-                  </ActiveFilter>
-                )}
-              </ActiveFiltersContainer>
-            )}
+                    <FontAwesomeIcon icon={faTimes} />
+                  </button>
+                </ActiveFilter>
+              )}
+            </ActiveFiltersContainer>
+          )}
             
             {/* Apply Button */}
             <FilterButton 
               style={{ width: '100%', marginTop: '1rem', justifyContent: 'center' }}
-              onClick={toggleFilters}
+              onClick={applyFilters}
             >
               Apply Filters
             </FilterButton>
-          </FiltersContainer>
+        </FiltersContainer>
         )}
       </SearchContainer>
       
@@ -1718,9 +1987,43 @@ const ProgramsPage: React.FC = () => {
         </Tab>
       </TabsContainer>
       
+      {/* Add Results Summary */}
+      {!loading && (
+        <ResultSummary>
+          <div>
+            {totalFilteredResults > 0 ? (
+              <>
+                Found <strong>{totalFilteredResults}</strong> programs 
+                {activeFilterCount > 0 ? ' matching your filters' : ''} 
+                {totalPages > 0 && <>
+                  {totalPages === 1 
+                    ? ' (all on this page)' 
+                    : getCurrentPagePrograms().length > 0 
+                      ? ` (showing page ${currentPage} of ${totalPages})` 
+                      : ` (across ${totalPages} pages)`}
+                </>}
+              </>
+            ) : (
+              filteredPrograms.length > 0 ? (
+                <>Showing <strong>{filteredPrograms.length}</strong> programs</>
+              ) : (
+                <>No programs match your filters</>
+              )
+            )}
+          </div>
+          
+          {activeFilterCount > 0 && (
+            <ClearFiltersButton onClick={clearAllFilters}>
+              <FontAwesomeIcon icon={faTimes} />
+              Clear All Filters
+            </ClearFiltersButton>
+          )}
+        </ResultSummary>
+      )}
+      
       <ProgramsGrid>
         {getCurrentPagePrograms().length > 0 ? (
-          getCurrentPagePrograms().map(program => (
+          getCurrentPagePrograms().map((program: Program) => (
             <ProgramCard key={program.id} program={program} />
           ))
         ) : (
@@ -1730,8 +2033,8 @@ const ProgramsPage: React.FC = () => {
         )}
       </ProgramsGrid>
       
-      {/* Pagination Controls */}
-      {filteredPrograms.length > 0 && (
+      {/* Pagination Controls - Only show if there are multiple pages and we have programs */}
+      {totalFilteredResults > 0 && totalPages > 1 && (
         <PaginationContainer>
           <PageButton 
             onClick={() => handlePageChange(currentPage - 1)}
@@ -1759,7 +2062,16 @@ const ProgramsPage: React.FC = () => {
           </PageButton>
           
           <PageInfo>
-            Page {currentPage} of {totalPages}
+            {totalFilteredResults > 0 && (
+              <>
+                Page {currentPage} of {totalPages}: Showing <strong>{getCurrentPagePrograms().length}</strong> of <strong>{totalFilteredResults}</strong> programs
+                {lastAPIResult.hasExtraPrograms && (
+                  <span style={{ marginLeft: '8px', color: '#f39c12', fontSize: '0.8rem' }}>
+                    (includes {lastAPIResult.extraProgramsCount} from next page)
+                  </span>
+                )}
+              </>
+            )}
             {loading && <span style={{ marginLeft: '10px', color: '#f39c12' }}>Loading...</span>}
           </PageInfo>
         </PaginationContainer>

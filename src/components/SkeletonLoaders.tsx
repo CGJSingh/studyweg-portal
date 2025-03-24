@@ -1,7 +1,7 @@
 import React from 'react';
 import Skeleton from 'react-loading-skeleton';
 import 'react-loading-skeleton/dist/skeleton.css';
-import styled from 'styled-components';
+import styled, { keyframes } from 'styled-components';
 
 // Styled components for skeleton layouts
 const SkeletonContainer = styled.div`
@@ -36,6 +36,73 @@ const SkeletonGrid = styled.div`
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 1.5rem;
   margin-bottom: 1.5rem;
+`;
+
+const shimmer = keyframes`
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+`;
+
+const SkeletonBase = styled.div`
+  background: linear-gradient(to right, #f6f7f8 8%, #edeef1 18%, #f6f7f8 33%);
+  background-size: 2000px 100%;
+  animation: ${shimmer} 2s linear infinite;
+`;
+
+const PageContainer = styled.div`
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem 2rem 1rem;
+`;
+
+const SearchBarSkeleton = styled(SkeletonBase)`
+  height: 48px;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  max-width: 600px;
+`;
+
+const FilterButtonSkeleton = styled(SkeletonBase)`
+  width: 120px;
+  height: 48px;
+  border-radius: 8px;
+`;
+
+const SearchFilterRow = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+`;
+
+const TabsSkeleton = styled.div`
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 0.75rem;
+`;
+
+const TabSkeleton = styled(SkeletonBase)`
+  width: 120px;
+  height: 36px;
+  border-radius: 4px;
+`;
+
+const ProgramsGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 1.5rem;
+`;
+
+const ProgramCardSkeleton = styled(SkeletonBase)`
+  height: 320px;
+  border-radius: 8px;
 `;
 
 // Dashboard Page Skeleton
@@ -156,45 +223,25 @@ export const ProfileSkeleton: React.FC = () => {
 // Programs List Page Skeleton
 export const ProgramsListSkeleton: React.FC = () => {
   return (
-    <SkeletonContainer>
-      {/* Header */}
-      <SkeletonCard style={{ marginBottom: '2rem' }}>
-        <Skeleton height={40} width="50%" style={{ marginBottom: '1rem' }} />
-        <Skeleton height={20} count={2} style={{ marginBottom: '1rem' }} />
-        <SkeletonRow style={{ marginBottom: '1rem' }}>
-          <Skeleton height={40} width="30%" />
-          <Skeleton height={40} width="30%" />
-        </SkeletonRow>
-      </SkeletonCard>
-      
-      {/* Filters Section */}
-      <SkeletonRow style={{ marginBottom: '2rem' }}>
-        <Skeleton height={40} width="20%" />
-        <Skeleton height={40} width="20%" />
-        <Skeleton height={40} width="20%" />
-      </SkeletonRow>
-      
-      {/* Programs Grid */}
-      <SkeletonGrid>
-        {Array(6).fill(0).map((_, index) => (
-          <SkeletonCard key={index} style={{ overflow: 'hidden' }}>
-            <Skeleton height={180} style={{ marginBottom: '1rem', marginLeft: '-1.5rem', marginRight: '-1.5rem', marginTop: '-1.5rem' }} />
-            <Skeleton height={25} width="80%" style={{ marginBottom: '0.5rem' }} />
-            <Skeleton height={15} count={3} style={{ marginBottom: '0.5rem' }} />
-            <SkeletonRow style={{ marginTop: '1rem' }}>
-              <Skeleton height={15} width="40%" />
-              <Skeleton height={15} width="40%" />
-            </SkeletonRow>
-            <Skeleton height={40} width="50%" style={{ marginTop: '1rem' }} />
-          </SkeletonCard>
+    <PageContainer>
+      <SearchFilterRow>
+        <SearchBarSkeleton />
+        <FilterButtonSkeleton />
+      </SearchFilterRow>
+
+      <TabsSkeleton>
+        <TabSkeleton />
+        <TabSkeleton />
+        <TabSkeleton />
+        <TabSkeleton />
+      </TabsSkeleton>
+
+      <ProgramsGrid>
+        {Array(12).fill(0).map((_, index) => (
+          <ProgramCardSkeleton key={index} />
         ))}
-      </SkeletonGrid>
-      
-      {/* Pagination */}
-      <div style={{ display: 'flex', justifyContent: 'center', marginTop: '2rem' }}>
-        <Skeleton width={200} height={40} />
-      </div>
-    </SkeletonContainer>
+      </ProgramsGrid>
+    </PageContainer>
   );
 };
 
