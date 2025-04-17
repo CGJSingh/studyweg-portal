@@ -90,3 +90,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - Design inspiration from the original StudyWeg WordPress site
 - React.js documentation and community
 - WooCommerce API documentation
+
+## Recent Updates
+- Fixed application form routing and navigation issues
+- Added proper client-side routing configuration for Vercel deployment
