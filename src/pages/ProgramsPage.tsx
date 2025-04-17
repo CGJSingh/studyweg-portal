@@ -286,20 +286,33 @@ const NoResultsMessage = styled.div`
   }
 `;
 
-const FiltersContainer = styled(m.div)`
-  position: absolute;
-  top: calc(100% + 10px);
+// Add a new Backdrop component for blurring the background when filters are open
+const Backdrop = styled.div<{show: boolean}>`
+  position: fixed;
+  top: 0;
+  left: 0;
   right: 0;
-  width: 350px;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  z-index: 99;
+  opacity: ${props => props.show ? 1 : 0};
+  visibility: ${props => props.show ? 'visible' : 'hidden'};
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+`;
+
+// Update the FiltersContainer to slide in from the right
+const FiltersContainer = styled(m.div)`
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 380px;
+  height: 100vh;
   background: white;
-  border-radius: 16px;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
-  padding: 1.5rem;
-  margin-bottom: 1.5rem;
+  box-shadow: -5px 0 30px rgba(0, 0, 0, 0.15);
+  padding: 2rem;
   z-index: 100;
-  max-height: 85vh;
   overflow-y: auto;
-  border: 1px solid rgba(0, 0, 0, 0.05);
   
   /* Scrollbar styling */
   &::-webkit-scrollbar {
@@ -1610,6 +1623,11 @@ const ProgramsPage: React.FC = () => {
       setTempFilters({...filters});
       setTempProgramTypes({...programTypes});
       setTempSortOption(sortOption);
+      // Prevent scrolling on the body when filter is open
+      document.body.style.overflow = 'hidden';
+    } else {
+      // Re-enable scrolling when filter is closed
+      document.body.style.overflow = 'auto';
     }
     setShowFilters(!showFilters);
   };
@@ -1794,8 +1812,9 @@ const ProgramsPage: React.FC = () => {
     // Clear cache to make sure we get fresh data
     clearProgramsCache();
     
-    // Close filter panel
+    // Close filter panel and re-enable scrolling
     setShowFilters(false);
+    document.body.style.overflow = 'auto';
     
     // Set loading state immediately for better UX
     setLoading(true);
@@ -1850,6 +1869,7 @@ const ProgramsPage: React.FC = () => {
         !filterButtonRef.current.contains(event.target as Node)
       ) {
         setShowFilters(false);
+        document.body.style.overflow = 'auto'; // Re-enable scrolling when closed
       }
     };
 
@@ -2137,10 +2157,21 @@ const ProgramsPage: React.FC = () => {
           </SuggestionsContainer>
         )}
       
+      {/* Backdrop that blurs content when filter is open */}
+      <Backdrop show={showFilters} onClick={() => {
+        setShowFilters(false);
+        document.body.style.overflow = 'auto';
+      }} />
+      
+      {/* Filter Container */}
       {showFilters && (
-          <FiltersContainer 
-            ref={filtersRef}
-          >
+        <FiltersContainer 
+          ref={filtersRef}
+          initial={{ x: '100%' }}
+          animate={{ x: 0 }}
+          exit={{ x: '100%' }}
+          transition={{ type: 'tween', duration: 0.3 }}
+        >
           <FilterHeader>
             <FilterTitle>
               <FontAwesomeIcon icon={faFilter} />
