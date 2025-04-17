@@ -7,7 +7,7 @@ import { motion } from 'framer-motion';
 
 import { Program } from '../types';
 import { fetchProgramById } from '../services/api';
-import { ApplicationFormSkeleton } from '../components/SkeletonLoaders';
+import ApplicationFormSkeleton from '../components/ApplicationFormSkeleton';
 
 // Application Steps Components
 import {
