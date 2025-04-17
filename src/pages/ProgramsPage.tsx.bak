@@ -1,0 +1,1440 @@
+import React, { useEffect, useState, useCallback, useRef } from 'react';
+import styled from 'styled-components';
+import { useLocation } from 'react-router-dom';
+import { fetchPrograms, clearProgramsCache, fetchAllPrograms, isOfflineMode as checkOfflineMode, setOfflineMode } from '../services/api';
+import { Program } from '../types';
+import ProgramCard from '../components/ProgramCard';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import {
+  faSearch,
+  faUser,
+  faFilter,
+  faSort,
+  faGraduationCap,
+  faMapMarkerAlt,
+  faClock,
+  faTag,
+  faTimes,
+  faChevronLeft,
+  faChevronRight,
+  faDollarSign,
+  faUniversity,
+  faBookmark,
+  faHistory,
+  faTrash,
+  faEye,
+  faUsers
+} from '@fortawesome/free-solid-svg-icons';
+import { motion as m } from 'framer-motion';
+import { useLocalStorage } from '../hooks/useLocalStorage';
+import { ProgramsListSkeleton as ProgramsLoadingSkeleton } from '../components/SkeletonLoaders';
+
+// All the styled components remain unchanged
+// ...
+
+// Define basic styled components
+const PageContainer = styled.div`
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem 2rem 1rem;
+`;
+
+const SearchContainer = styled.div`
+  position: relative;
+  flex: 1;
+  
+  @media (max-width: 768px) {
+    width: 100%;
+  }
+`;
+
+const SearchInput = styled.input`
+  width: 100%;
+  padding: 0.85rem 1rem;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 1rem;
+  
+  @media (max-width: 480px) {
+    padding: 0.7rem 0.9rem;
+    font-size: 0.9rem;
+  }
+`;
+
+const ProgramsGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+  
+  @media (max-width: 768px) {
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 1rem;
+  }
+  
+  @media (max-width: 480px) {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+`;
+
+const FilterButton = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: #f39c12;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 0.75rem 1.25rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  
+  @media (max-width: 480px) {
+    padding: 0.6rem 1rem;
+    font-size: 0.8rem;
+  }
+`;
+
+const TabsContainer = styled.div`
+  display: flex;
+  border-bottom: 1px solid #eee;
+  margin-bottom: 1.5rem;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  
+  &::-webkit-scrollbar {
+    height: 0;
+    width: 0;
+    display: none;
+  }
+  
+  @media (max-width: 480px) {
+    margin-bottom: 1rem;
+  }
+`;
+
+const Tab = styled.button<{ active: boolean }>`
+  padding: 0.75rem 1.5rem;
+  background: none;
+  border: none;
+  border-bottom: 2px solid ${props => props.active ? '#f39c12' : 'transparent'};
+  color: ${props => props.active ? '#f39c12' : '#666'};
+  font-weight: ${props => props.active ? '600' : '400'};
+  font-size: 0.9rem;
+  cursor: pointer;
+  white-space: nowrap;
+  
+  @media (max-width: 480px) {
+    padding: 0.5rem 1rem;
+    font-size: 0.8rem;
+  }
+`;
+
+const SearchFilterRow = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  @media (max-width: 480px) {
+    margin-bottom: 1rem;
+  }
+`;
+
+const NoResultsMessage = styled.div`
+  text-align: center;
+  padding: 3rem 2rem;
+  font-size: 1.2rem;
+  color: #666;
+  grid-column: 1 / -1;
+`;
+
+// Add this with the other styled components
+const FiltersPanel = styled.div`
+  position: absolute;
+  top: calc(100% - 20px);
+  right: 0;
+  width: 320px;
+  background-color: white;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 15px;
+  z-index: 100;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  max-height: 80vh;
+  overflow: auto;
+  
+  @media (max-width: 768px) {
+    width: 280px;
+  }
+  
+  @media (max-width: 480px) {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    max-height: 100%;
+    border-radius: 0;
+    z-index: 1000;
+  }
+`;
+
+// Add these with the other styled components
+const SuggestionsDropdown = styled.div`
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background-color: white;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  margin-top: 5px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  z-index: 50;
+  max-height: 300px;
+  overflow-y: auto;
+  
+  @media (max-width: 480px) {
+    max-height: 250px;
+  }
+`;
+
+const SuggestionItem = styled.div`
+  padding: 10px 15px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  
+  &:hover {
+    background-color: #f5f5f5;
+  }
+  
+  @media (max-width: 480px) {
+    padding: 8px 12px;
+    font-size: 0.9rem;
+  }
+`;
+
+const SuggestionText = styled.div`
+  font-weight: 500;
+`;
+
+const SuggestionType = styled.div`
+  font-size: 0.8rem;
+  color: #666;
+  padding: 2px 8px;
+  background-color: #f0f0f0;
+  border-radius: 12px;
+  
+  @media (max-width: 480px) {
+    font-size: 0.7rem;
+    padding: 2px 6px;
+  }
+`;
+
+// Define program types
+type ProgramType = 'bachelors' | 'diploma' | 'masters' | 'phd' | 'certificate';
+
+// Define tab types
+type TabType = 'all' | 'top' | 'fast' | 'intake';
+
+// Define sort options
+type SortOption = 'default' | 'program-type' | 'name-asc' | 'name-desc' | 'level-asc' | 'level-desc' | 'fee-asc' | 'fee-desc' | 'rating-asc' | 'rating-desc';
+
+// Define FilterState type
+type FilterState = {
+  level: string[];
+  duration: string[];
+  country: string[];
+  university: string[];
+  category: string[];
+  feeRange: [number, number];
+};
+
+// Define SavedSearch type
+type SavedSearch = {
+  id: string;
+  name: string;
+  filters: FilterState;
+  programTypes: {
+    bachelors: boolean;
+    diploma: boolean;
+    masters: boolean;
+    phd: boolean;
+    certificate: boolean;
+  };
+  searchQuery: string;
+  sortOption: string;
+  dateCreated: string;
+};
+
+// Add these with the other styled components
+const PaginationContainer = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  
+  @media (max-width: 480px) {
+    gap: 0.3rem;
+  }
+`;
+
+const PageButton = styled.button<{ active?: boolean }>`
+  background-color: ${props => props.active ? '#f39c12' : '#f8f9fa'};
+  color: ${props => props.active ? 'white' : '#333'};
+  border: 1px solid ${props => props.active ? '#f39c12' : '#ddd'};
+  width: 36px;
+  height: 36px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-weight: ${props => props.active ? '600' : 'normal'};
+  
+  @media (max-width: 480px) {
+    width: 32px;
+    height: 32px;
+    font-size: 0.8rem;
+  }
+  
+  &:hover {
+    background-color: ${props => props.active ? '#e08e0b' : '#eee'};
+  }
+`;
+
+const ProgramsPage: React.FC = () => {
+  // Basic state
+  const [programs, setPrograms] = useState<Program[]>([]);
+  const [filteredPrograms, setFilteredPrograms] = useState<Program[]>([]);
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<TabType>('all');
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [totalPages, setTotalPages] = useState<number>(1);
+  const [programsPerPage, setProgramsPerPage] = useState<number>(12); // Show 12 programs per page
+  
+  // Filter state
+  const [showFilters, setShowFilters] = useState<boolean>(false);
+  const [filterOptions, setFilterOptions] = useState<{
+    levels: string[];
+    durations: string[];
+    countries: string[];
+    categories: string[];
+    universities: string[];
+  }>({
+    levels: [],
+    durations: [],
+    countries: [],
+    categories: [],
+    universities: []
+  });
+
+  // State for filters
+  const [filters, setFilters] = useState<FilterState>({
+    level: [],
+    duration: [],
+    country: [],
+    category: [],
+    university: [],
+    feeRange: [0, 100000]
+  });
+
+  // Temporary state for filters
+  const [tempFilters, setTempFilters] = useState<FilterState>({
+    level: [],
+    duration: [],
+    country: [],
+    category: [],
+    university: [],
+    feeRange: [0, 100000]
+  });
+
+  // State for program types
+  const [programTypes, setProgramTypes] = useState<{
+    bachelors: boolean;
+    diploma: boolean;
+    masters: boolean;
+    phd: boolean;
+    certificate: boolean;
+  }>({
+    bachelors: false,
+    diploma: false,
+    masters: false,
+    phd: false,
+    certificate: false
+  });
+
+  // Temporary state for program types
+  const [tempProgramTypes, setTempProgramTypes] = useState<{
+    bachelors: boolean;
+    diploma: boolean;
+    masters: boolean;
+    phd: boolean;
+    certificate: boolean;
+  }>({
+    bachelors: false,
+    diploma: false,
+    masters: false,
+    phd: false,
+    certificate: false
+  });
+
+  // State for sorting
+  const [sortOption, setSortOption] = useState<SortOption>('program-type');
+  const [tempSortOption, setTempSortOption] = useState<SortOption>('program-type');
+
+  // State for active filter count
+  const [activeFilterCount, setActiveFilterCount] = useState(0);
+
+  // State for saved searches
+  const [savedSearches, setSavedSearches] = useState<SavedSearch[]>([]);
+  const [showSavedSearches, setShowSavedSearches] = useState(false);
+  const [showSaveSearchModal, setShowSaveSearchModal] = useState(false);
+  const [searchName, setSearchName] = useState('');
+  const [searchDescription, setSearchDescription] = useState('');
+
+  // Add a ref for the saved searches panel
+  const savedSearchesRef = useRef<HTMLDivElement>(null);
+
+  // Add these state variables near the other state declarations
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [suggestions, setSuggestions] = useState<Array<{ text: string; type: string }>>([]);
+
+  // Add missing state variables
+  const [isOfflineMode, setIsOfflineMode] = useState(false);
+
+  // Function declarations - KEEP ONLY ONE VERSION OF EACH FUNCTION
+  const handleFilterChange = (filterType: keyof FilterState, value: string, isTemp: boolean = false) => {
+    console.log(`Filter change: ${filterType} = ${value}, isTemp = ${isTemp}`);
+    
+    const setState = isTemp ? setTempFilters : setFilters;
+    setState(prev => {
+      // Make a deep copy of the previous state to avoid reference issues
+      const newState = JSON.parse(JSON.stringify(prev));
+      const currentValues = newState[filterType] as string[];
+      const valueIndex = currentValues.indexOf(value);
+      
+      if (valueIndex === -1) {
+        // Add the value if it doesn't exist
+        currentValues.push(value);
+      } else {
+        // Remove the value if it already exists
+        currentValues.splice(valueIndex, 1);
+      }
+      
+      console.log(`Updated ${filterType} filter:`, currentValues);
+      return newState;
+    });
+
+    // If directly applying (not temp), also update UI immediately
+    if (!isTemp) {
+      setCurrentPage(1);
+      clearProgramsCache();
+      // The loadPrograms will be called via useEffect when filters change
+    }
+  };
+
+  const handleFeeRangeChange = (min: number, max: number, isTemp: boolean = false) => {
+    console.log(`Fee range change: ${min} - ${max}, isTemp = ${isTemp}`);
+    
+    const setState = isTemp ? setTempFilters : setFilters;
+    setState(prev => {
+      // Make a deep copy of the previous state to avoid reference issues
+      const newState = JSON.parse(JSON.stringify(prev));
+      newState.feeRange = [min, max];
+      return newState;
+    });
+
+    // If directly applying (not temp), also update UI immediately
+    if (!isTemp) {
+      setCurrentPage(1);
+      clearProgramsCache();
+      // The loadPrograms will be called via useEffect when filters change
+    }
+  };
+
+  const clearAllFilters = (e?: React.MouseEvent<HTMLButtonElement>) => {
+    setFilters({
+      level: [],
+      duration: [],
+      country: [],
+      university: [],
+      category: [],
+      feeRange: [0, 100000]
+    });
+    setCurrentPage(1);
+  };
+
+  // Update the useEffect for calculating active filter count
+  useEffect(() => {
+    let count = 0;
+    
+    // Count array filters that have items
+    if (filters.level.length > 0) count++;
+    if (filters.duration.length > 0) count++;
+    if (filters.country.length > 0) count++;
+    if (filters.university.length > 0) count++;
+    if (filters.category.length > 0) count++;
+    
+    // Only count fee range if it's not the default values
+    if (filters.feeRange[0] > 0 || filters.feeRange[1] < 100000) count++;
+    
+    // Count active program types
+    Object.values(programTypes).forEach(isActive => {
+      if (isActive) count++;
+    });
+    
+    setActiveFilterCount(count);
+  }, [filters, programTypes]);
+
+  const handleProgramTypeChange = (type: ProgramType, checked: boolean, isTemp: boolean = false) => {
+    const setState = isTemp ? setTempProgramTypes : setProgramTypes;
+    setState(prev => ({
+      ...prev,
+      [type]: checked
+    }));
+  };
+
+  const handleSaveSearch = () => {
+    if (showSaveSearchModal) {
+      // Save the search when already showing the modal
+      const newSavedSearch: SavedSearch = {
+        id: Date.now().toString(),
+        name: searchName,
+        filters: {...filters},
+        programTypes: {...programTypes},
+        searchQuery,
+        sortOption,
+        dateCreated: new Date().toISOString()
+      };
+      
+      setSavedSearches(prev => [...prev, newSavedSearch]);
+      setShowSaveSearchModal(false);
+      setSearchName('');
+      setSearchDescription('');
+    } else {
+      // Show the modal and set default name
+      setShowSaveSearchModal(true);
+      setSearchName(`Search on ${new Date().toLocaleString()}`);
+    }
+  };
+
+  const location = useLocation();
+
+  // Add new state for storing the immediate search input
+  const [searchInput, setSearchInput] = useState<string>('');
+
+  // Add a ref for the filters container
+  const filtersRef = useRef<HTMLDivElement>(null);
+  const filterButtonRef = useRef<HTMLButtonElement>(null);
+
+  // Add a new state to track total filtered results
+  const [totalFilteredResults, setTotalFilteredResults] = useState<number>(0);
+
+  // After the existing state variables, add a new state variable to store the last API result info
+  const [lastAPIResult, setLastAPIResult] = useState<{
+    programsCount: number;
+    hasExtraPrograms: boolean;
+    extraProgramsCount: number;
+  }>({
+    programsCount: 0,
+    hasExtraPrograms: false,
+    extraProgramsCount: 0
+  });
+
+  // Check offline mode from localStorage on component mount
+  useEffect(() => {
+    try {
+      const offlineStatus = checkOfflineMode();
+      if (offlineStatus) {
+        setIsOfflineMode(true);
+        console.log('App started in offline mode');
+      }
+    } catch (err) {
+      console.error('Error checking offline mode:', err);
+    }
+  }, []);
+
+  // Add a utility function to determine program type order
+  const getProgramTypeOrder = (program: Program): number => {
+    const level = program.attributes?.find(attr => attr.name === "Program Level")?.options[0]?.toLowerCase() || '';
+    
+    // Order: Certificate (1), Diploma (2), Bachelor's (3), Master's (4), PhD (5)
+    if (level.includes('certificate')) return 1;
+    if (level.includes('diploma')) return 2;
+    if (level.includes('bachelor')) return 3;
+    if (level.includes('master')) return 4;
+    if (level.includes('phd') || level.includes('doctorate')) return 5;
+    
+    // Default to the end for unknown types
+    return 6;
+  };
+
+  // Update the loadPrograms function to sort by program type
+  const loadPrograms = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      setIsOfflineMode(false);
+      
+      // Build extra parameters based on active filters
+      const extraParams: Record<string, string> = {
+        per_page: programsPerPage.toString(),
+        page: currentPage.toString(),
+        sort: 'name'
+      };
+      
+      // Log current filters for debugging
+      console.log('Active filters:', filters);
+      console.log('Active program types:', programTypes);
+      
+      // Add filter parameters
+      if (filters.level.length > 0) extraParams['filter[program_level]'] = filters.level.join(',');
+      if (filters.duration.length > 0) extraParams['filter[duration]'] = filters.duration.join(',');
+      if (filters.country.length > 0) extraParams['filter[country]'] = filters.country.join(',');
+      if (filters.category.length > 0) extraParams['filter[category]'] = filters.category.join(',');
+      if (filters.university.length > 0) extraParams['filter[university]'] = filters.university.join(',');
+      if (filters.feeRange[0] > 0) extraParams['filter[min_price]'] = filters.feeRange[0].toString();
+      if (filters.feeRange[1] < 100000) extraParams['filter[max_price]'] = filters.feeRange[1].toString();
+      
+      // Add program type filters
+      const activeTypes = Object.entries(programTypes)
+        .filter(([_, isActive]) => isActive)
+        .map(([type]) => type);
+        
+      if (activeTypes.length > 0) {
+        extraParams['filter[program_types]'] = activeTypes.join(',');
+      }
+      
+      // Add search query
+      if (searchQuery) {
+        extraParams['search'] = searchQuery;
+      }
+      
+      // Add tab filter
+      if (activeTab !== 'all') {
+        extraParams['filter[tag]'] = activeTab === 'top' ? 'top program' : 
+                                   activeTab === 'fast' ? 'fast acceptance' : 'intake offer';
+      }
+
+      // Add sorting
+      if (sortOption !== 'default' && sortOption !== 'name-asc') {
+        const [field, direction] = sortOption.split('-');
+        extraParams['sort'] = `${direction === 'desc' ? '-' : ''}${field}`;
+      }
+      
+      extraParams['timestamp'] = Date.now().toString();
+      extraParams['apply_all_filters'] = 'true';
+      extraParams['include_total_count'] = 'true';
+      
+      // Log final params for debugging
+      console.log('API parameters:', extraParams);
+      
+      try {
+        // Fetch programs
+        const result = await fetchPrograms(currentPage, {
+          extraParams,
+          forceRefresh: true
+        });
+        
+        // Process results
+        const resultTotalCount = 'totalCount' in result && typeof result.totalCount === 'number' 
+          ? result.totalCount 
+          : (result.totalPages * programsPerPage);
+        
+        console.log('API result:', result);
+        
+        setTotalFilteredResults(resultTotalCount);
+        setPrograms(result.programs);
+        
+        // Apply client-side filtering as a backup in case API filters aren't working
+        let filteredResults = [...result.programs];
+        
+        // Client-side filtering
+        if (activeFilterCount > 0) {
+          console.log('Applying client-side filtering');
+          
+          // Filter by program type
+          if (Object.values(programTypes).some(v => v)) {
+            filteredResults = filteredResults.filter(program => {
+              const level = program.attributes?.find(attr => attr.name === "Program Level")?.options[0]?.toLowerCase() || '';
+              return (
+                (programTypes.bachelors && level.includes('bachelor')) ||
+                (programTypes.masters && level.includes('master')) ||
+                (programTypes.diploma && level.includes('diploma')) ||
+                (programTypes.phd && level.includes('phd')) ||
+                (programTypes.certificate && level.includes('certificate'))
+              );
+            });
+          }
+          
+          // Filter by level
+          if (filters.level.length > 0) {
+            filteredResults = filteredResults.filter(program => {
+              const level = program.attributes?.find(attr => attr.name === "Program Level")?.options[0] || '';
+              return filters.level.some(l => level.toLowerCase().includes(l.toLowerCase()));
+            });
+          }
+          
+          // Filter by duration
+          if (filters.duration.length > 0) {
+            filteredResults = filteredResults.filter(program => {
+              const duration = program.attributes?.find(attr => attr.name === "Duration")?.options[0] || '';
+              return filters.duration.some(d => duration.includes(d));
+            });
+          }
+          
+          // Filter by country
+          if (filters.country.length > 0) {
+            filteredResults = filteredResults.filter(program => {
+              const country = program.attributes?.find(attr => attr.name === "Country")?.options[0] || 
+                            program.institution?.location || '';
+              return filters.country.some(c => country.toLowerCase().includes(c.toLowerCase()));
+            });
+          }
+          
+          // Filter by university
+          if (filters.university.length > 0) {
+            filteredResults = filteredResults.filter(program => {
+              const university = program.institution?.name || '';
+              return filters.university.some(u => university.toLowerCase().includes(u.toLowerCase()));
+            });
+          }
+          
+          // Filter by category
+          if (filters.category.length > 0) {
+            filteredResults = filteredResults.filter(program => {
+              return program.categories?.some(category => 
+                filters.category.includes(category.id.toString())
+              );
+            });
+          }
+          
+          // Filter by fee range
+          if (filters.feeRange[0] > 0 || filters.feeRange[1] < 100000) {
+            filteredResults = filteredResults.filter(program => {
+              // Try to find the fee in program attributes
+              const feeStr = program.attributes?.find(attr => attr.name.includes("Fee"))?.options[0] || '0';
+              // Extract numbers from the fee string
+              const feeMatch = feeStr.match(/\d+/);
+              const fee = feeMatch ? parseInt(feeMatch[0]) : 0;
+              
+              return fee >= filters.feeRange[0] && fee <= filters.feeRange[1];
+            });
+          }
+          
+          console.log('Client-side filtered results:', filteredResults.length);
+        }
+        
+        // Sort programs by program type order, then by name
+        filteredResults.sort((a, b) => {
+          // Handle different sort options
+          if (sortOption === 'program-type' || sortOption === 'default') {
+            // First sort by program type order
+            const typeOrderA = getProgramTypeOrder(a);
+            const typeOrderB = getProgramTypeOrder(b);
+            
+            if (typeOrderA !== typeOrderB) {
+              return typeOrderA - typeOrderB;
+            }
+            
+            // Then sort by name within each program type
+            return a.name.localeCompare(b.name);
+          } 
+          else if (sortOption === 'name-asc') {
+            return a.name.localeCompare(b.name);
+          } 
+          else if (sortOption === 'name-desc') {
+            return b.name.localeCompare(a.name);
+          }
+          else if (sortOption === 'fee-asc' || sortOption === 'fee-desc') {
+            // Get fee values for each program
+            const getFee = (program: Program): number => {
+              const feeStr = program.attributes?.find(attr => attr.name.includes("Fee"))?.options[0] || '0';
+              const feeMatch = feeStr.match(/\d+/);
+              return feeMatch ? parseInt(feeMatch[0]) : 0;
+            };
+            
+            const feeA = getFee(a);
+            const feeB = getFee(b);
+            
+            if (sortOption === 'fee-asc') {
+              return feeA - feeB;
+            } else {
+              return feeB - feeA;
+            }
+          }
+          
+          // Default to program type sorting if no other option matches
+          return getProgramTypeOrder(a) - getProgramTypeOrder(b);
+        });
+        
+        // After filtering and sorting in loadPrograms, add this:
+        console.log('PROGRAMS LOADED:', {
+          totalPrograms: filteredResults.length,
+          programsPerPage,
+          calculatedPages: Math.ceil(filteredResults.length / programsPerPage)
+        });
+
+        // Ensure we always have at least 1 page if there are programs
+        const totalPagesNeeded = filteredResults.length === 0 ? 0 : 
+          (programsPerPage > 1000 ? 1 : Math.max(1, Math.ceil(filteredResults.length / programsPerPage)));
+
+        console.log(`Setting ${filteredResults.length} programs across ${totalPagesNeeded} pages with ${programsPerPage} per page`);
+
+        setFilteredPrograms(filteredResults);
+        setTotalPages(totalPagesNeeded);
+
+        // Force a different page if current page is beyond the limit
+        if (currentPage > totalPagesNeeded && totalPagesNeeded > 0) {
+          setCurrentPage(1);
+        }
+        
+      } catch (error) {
+        console.error('Error fetching programs:', error);
+        throw error;
+      }
+    } catch (error) {
+      console.error('Error loading programs:', error);
+      setError('Failed to load program data. Using sample data instead.');
+      setIsOfflineMode(true);
+      setOfflineMode(true);
+      setPrograms([]);
+      setFilteredPrograms([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Retry function
+  const handleRetry = () => {
+    setLoading(true);
+    setError(null);
+    clearProgramsCache();
+    try {
+      setOfflineMode(false);
+    } catch (err) {
+      console.error('Error clearing offline mode:', err);
+    }
+    loadPrograms();
+  };
+
+  // Update the useEffect hook to also respond to programsPerPage changes
+  useEffect(() => {
+    loadPrograms();
+  }, [currentPage, programsPerPage]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Load on filter change
+  useEffect(() => {
+    if (currentPage === 1) {
+      clearProgramsCache();
+      loadPrograms();
+    } else {
+      setCurrentPage(1);
+    }
+  }, [searchQuery, activeTab, filters, sortOption, programTypes]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Handle search key press
+  const handleSearchKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      setSearchQuery(searchInput);
+      setCurrentPage(1);
+      setShowSuggestions(false);
+    }
+  };
+
+  // Handle search change
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setSearchInput(value);
+    
+    // Generate suggestions when user types
+    if (value.length >= 2) {
+      const query = value.toLowerCase();
+      const programSuggestions = programs
+        .filter(program => program.name.toLowerCase().includes(query))
+        .slice(0, 5)
+        .map(program => ({
+          id: program.id,
+          text: program.name,
+          type: 'program'
+        }));
+      
+      // Collect university suggestions
+      const universitySuggestions = programs
+        .filter(program => 
+          program.institution?.name && 
+          program.institution.name.toLowerCase().includes(query)
+        )
+        .slice(0, 3)
+        .map(program => ({
+          id: program.id,
+          text: program.institution?.name || '',
+          type: 'university'
+        }));
+      
+      // Collect category suggestions
+      const categorySuggestions = programs
+        .flatMap(program => program.categories)
+        .filter(category => category.name.toLowerCase().includes(query))
+        .slice(0, 3)
+        .map(category => ({
+          id: category.id.toString(),
+          text: category.name,
+          type: 'category'
+        }));
+      
+      // Combine and remove duplicates
+      const combinedSuggestions = [
+        ...programSuggestions,
+        ...universitySuggestions.filter(uni => 
+          !programSuggestions.some(prog => prog.text === uni.text)
+        ),
+        ...categorySuggestions.filter(cat => 
+          !programSuggestions.some(prog => prog.text === cat.text)
+        )
+      ].slice(0, 10);
+      
+      setSuggestions(combinedSuggestions);
+      setShowSuggestions(combinedSuggestions.length > 0);
+    } else {
+      setSuggestions([]);
+      setShowSuggestions(false);
+    }
+  };
+
+  // Toggle filters
+  const toggleFilters = () => {
+    if (!showFilters) {
+      setTempFilters({...filters});
+      setTempProgramTypes({...programTypes});
+      setTempSortOption(sortOption);
+    }
+    setShowFilters(!showFilters);
+  };
+  
+  // Handle sort change
+  const handleSortChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setTempSortOption(e.target.value as SortOption);
+  };
+
+  // Apply filters
+  const applyFilters = () => {
+    console.log('Applying filters:', { 
+      tempFilters, 
+      tempProgramTypes, 
+      tempSortOption 
+    });
+    
+    // Copy values to avoid reference issues
+    setFilters({...tempFilters});
+    setProgramTypes({...tempProgramTypes});
+    setSortOption(tempSortOption);
+    setCurrentPage(1);
+    setShowFilters(false);
+    
+    // Clear cache and load programs with new filters
+    clearProgramsCache();
+    setLoading(true);
+    
+    // Call loadPrograms directly instead of waiting for useEffect
+    setTimeout(() => {
+      loadPrograms();
+    }, 0);
+  };
+
+  // Handle tab change
+  const handleTabChange = (tab: TabType) => {
+    setActiveTab(tab);
+    setCurrentPage(1);
+  };
+
+  // Update the getCurrentPagePrograms function to handle the "All" option
+  const getCurrentPagePrograms = () => {
+    // Show all programs if programsPerPage is set to a very high number
+    if (programsPerPage > 1000 || filteredPrograms.length <= programsPerPage) {
+      return filteredPrograms;
+    }
+    
+    const pageStartIndex = (currentPage - 1) * programsPerPage;
+    // Ensure we don't go beyond array boundaries
+    const pageEndIndex = Math.min(pageStartIndex + programsPerPage, filteredPrograms.length);
+    
+    console.log(`Getting programs for page ${currentPage}: ${pageStartIndex}-${pageEndIndex} of ${filteredPrograms.length}`);
+    return filteredPrograms.slice(pageStartIndex, pageEndIndex);
+  };
+
+  // Page navigation functions
+  const handlePageChange = (page: number) => {
+    if (page !== currentPage && page > 0 && page <= totalPages) {
+      setCurrentPage(page);
+      window.scrollTo(0, 0);
+    }
+  };
+
+  // No results content
+  const NoResultsContent = () => (
+    <div style={{ textAlign: 'center', padding: '2rem' }}>
+      <FontAwesomeIcon icon={faSearch} size="2x" />
+      <div>No programs found matching your criteria</div>
+      <div>Try adjusting your filters or search terms</div>
+      <button onClick={clearAllFilters}>Clear All Filters</button>
+    </div>
+  );
+
+  // Add this useEffect to debug pagination issues
+  useEffect(() => {
+    console.log('Pagination state:', {
+      totalPrograms: filteredPrograms.length,
+      currentPage,
+      totalPages,
+      programsPerPage,
+      paginationVisible: filteredPrograms.length > 0
+    });
+  }, [filteredPrograms, currentPage, totalPages, programsPerPage]);
+
+  // The render method return statement would be here
+  return (
+    <PageContainer>
+      {isOfflineMode && (
+        <div style={{ backgroundColor: '#fff3cd', color: '#856404', padding: '12px', marginBottom: '20px' }}>
+          <span style={{ fontWeight: 600, marginRight: '8px' }}>Offline Mode:</span>
+          You're viewing limited program data because we couldn't connect to the server.
+          <button onClick={handleRetry} style={{ marginLeft: '12px' }}>Try Again</button>
+        </div>
+      )}
+      
+      <SearchContainer>
+        <SearchFilterRow>
+          <div style={{ flex: 1, position: 'relative' }}>
+            <SearchInput 
+              type="text" 
+              placeholder="Search for programs, universities, or subject areas..." 
+              value={searchInput}
+              onChange={handleSearchChange}
+              onKeyPress={handleSearchKeyPress}
+            />
+            
+            {/* Add suggestions dropdown */}
+            {showSuggestions && suggestions.length > 0 && (
+              <SuggestionsDropdown>
+                {suggestions.map((suggestion, index) => (
+                  <SuggestionItem 
+                    key={index} 
+                    onClick={() => {
+                      setSearchInput(suggestion.text);
+                      setSearchQuery(suggestion.text);
+                      setShowSuggestions(false);
+                    }}
+                  >
+                    <SuggestionText>{suggestion.text}</SuggestionText>
+                    <SuggestionType>{suggestion.type}</SuggestionType>
+                  </SuggestionItem>
+                ))}
+              </SuggestionsDropdown>
+            )}
+          </div>
+          
+          <FilterButton onClick={toggleFilters} ref={filterButtonRef}>
+            <FontAwesomeIcon icon={faFilter} />
+            Filter {activeFilterCount > 0 && `(${activeFilterCount})`}
+          </FilterButton>
+        </SearchFilterRow>
+        
+        {/* Add filters panel */}
+        {showFilters && (
+          <FiltersPanel ref={filtersRef}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px' }}>
+              <div style={{ fontWeight: 'bold' }}>Filter & Sort Programs</div>
+              <button 
+                onClick={() => setShowFilters(false)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+              >
+                <FontAwesomeIcon icon={faTimes} />
+              </button>
+            </div>
+            
+            {/* Sort options */}
+            <div style={{ marginBottom: '15px' }}>
+              <div style={{ fontWeight: 'bold', marginBottom: '5px' }}>Sort By</div>
+              <select 
+                value={tempSortOption} 
+                onChange={handleSortChange}
+                style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ddd' }}
+              >
+                <option value="program-type">Program Type (Default)</option>
+                <option value="name-asc">Name (A-Z)</option>
+                <option value="name-desc">Name (Z-A)</option>
+                <option value="fee-asc">Fee (Low to High)</option>
+                <option value="fee-desc">Fee (High to Low)</option>
+              </select>
+            </div>
+            
+            {/* Program Types */}
+            <div style={{ marginBottom: '15px' }}>
+              <div style={{ fontWeight: 'bold', marginBottom: '5px' }}>Program Types</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '5px' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                  <input 
+                    type="checkbox" 
+                    checked={tempProgramTypes.bachelors}
+                    onChange={(e) => handleProgramTypeChange('bachelors', e.target.checked, true)} 
+                  />
+                  Bachelor's
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                  <input 
+                    type="checkbox" 
+                    checked={tempProgramTypes.masters}
+                    onChange={(e) => handleProgramTypeChange('masters', e.target.checked, true)} 
+                  />
+                  Master's
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                  <input 
+                    type="checkbox" 
+                    checked={tempProgramTypes.diploma}
+                    onChange={(e) => handleProgramTypeChange('diploma', e.target.checked, true)} 
+                  />
+                  Diploma
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                  <input 
+                    type="checkbox" 
+                    checked={tempProgramTypes.phd}
+                    onChange={(e) => handleProgramTypeChange('phd', e.target.checked, true)} 
+                  />
+                  PhD
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                  <input 
+                    type="checkbox" 
+                    checked={tempProgramTypes.certificate}
+                    onChange={(e) => handleProgramTypeChange('certificate', e.target.checked, true)} 
+                  />
+                  Certificate
+                </label>
+              </div>
+            </div>
+            
+            {/* Fee Range */}
+            <div style={{ marginBottom: '15px' }}>
+              <div style={{ fontWeight: 'bold', marginBottom: '5px' }}>Tuition Fee Range</div>
+              <div style={{ marginBottom: '5px' }}>
+                ${tempFilters.feeRange[0]} - ${tempFilters.feeRange[1]}
+              </div>
+              <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                <input 
+                  type="range" 
+                  min="0" 
+                  max="100000" 
+                  step="1000"
+                  value={tempFilters.feeRange[0]}
+                  onChange={(e) => handleFeeRangeChange(parseInt(e.target.value), tempFilters.feeRange[1], true)}
+                  style={{ width: '45%' }}
+                />
+                <input 
+                  type="range" 
+                  min="0" 
+                  max="100000" 
+                  step="1000"
+                  value={tempFilters.feeRange[1]}
+                  onChange={(e) => handleFeeRangeChange(tempFilters.feeRange[0], parseInt(e.target.value), true)}
+                  style={{ width: '45%' }}
+                />
+              </div>
+            </div>
+            
+            {/* Duration Filter */}
+            <div style={{ marginBottom: '15px' }}>
+              <div style={{ fontWeight: 'bold', marginBottom: '5px' }}>Duration</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '5px' }}>
+                {["1 year", "2 years", "3 years", "4 years", "5+ years"].map((duration) => (
+                  <label key={duration} style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                    <input 
+                      type="checkbox" 
+                      checked={tempFilters.duration.includes(duration)}
+                      onChange={() => handleFilterChange('duration', duration, true)} 
+                    />
+                    {duration}
+                  </label>
+                ))}
+              </div>
+            </div>
+            
+            {/* Country Filter */}
+            <div style={{ marginBottom: '15px' }}>
+              <div style={{ fontWeight: 'bold', marginBottom: '5px' }}>Country</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '5px' }}>
+                {["Canada", "USA", "UK", "Australia", "Germany", "France"].map((country) => (
+                  <label key={country} style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                    <input 
+                      type="checkbox" 
+                      checked={tempFilters.country.includes(country)}
+                      onChange={() => handleFilterChange('country', country, true)} 
+                    />
+                    {country}
+                  </label>
+                ))}
+              </div>
+            </div>
+            
+            {/* University Filter */}
+            <div style={{ marginBottom: '15px' }}>
+              <div style={{ fontWeight: 'bold', marginBottom: '5px' }}>University</div>
+              <div style={{ maxHeight: '150px', overflowY: 'auto', padding: '5px', border: '1px solid #eee', borderRadius: '4px' }}>
+                {programs.map(program => program.institution?.name)
+                  .filter((name, index, array) => name && array.indexOf(name) === index)
+                  .sort()
+                  .map((uni) => uni && (
+                    <label key={uni} style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '5px' }}>
+                      <input 
+                        type="checkbox" 
+                        checked={tempFilters.university.includes(uni)}
+                        onChange={() => handleFilterChange('university', uni, true)} 
+                      />
+                      {uni}
+                    </label>
+                  ))}
+              </div>
+            </div>
+            
+            {/* Category Filter */}
+            <div style={{ marginBottom: '15px' }}>
+              <div style={{ fontWeight: 'bold', marginBottom: '5px' }}>Category</div>
+              <div style={{ maxHeight: '150px', overflowY: 'auto', padding: '5px', border: '1px solid #eee', borderRadius: '4px' }}>
+                {programs.flatMap(program => program.categories)
+                  .filter((category, index, array) => 
+                    index === array.findIndex(c => c.id === category.id)
+                  )
+                  .sort((a, b) => a.name.localeCompare(b.name))
+                  .map(category => (
+                    <label key={category.id} style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '5px' }}>
+                      <input 
+                        type="checkbox" 
+                        checked={tempFilters.category.includes(category.id.toString())}
+                        onChange={() => handleFilterChange('category', category.id.toString(), true)} 
+                      />
+                      {category.name}
+                    </label>
+                  ))}
+              </div>
+            </div>
+            
+            {/* Apply filters and Clear filters buttons */}
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button 
+                onClick={applyFilters}
+                style={{
+                  flex: 2,
+                  background: '#f39c12',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  padding: '10px',
+                  cursor: 'pointer',
+                  fontWeight: 'bold'
+                }}
+              >
+                Apply Filters
+              </button>
+              <button 
+                onClick={() => {
+                  setTempFilters({
+                    level: [],
+                    duration: [],
+                    country: [],
+                    university: [],
+                    category: [],
+                    feeRange: [0, 100000]
+                  });
+                  setTempProgramTypes({
+                    bachelors: false,
+                    diploma: false,
+                    masters: false,
+                    phd: false,
+                    certificate: false
+                  });
+                }}
+                style={{
+                  flex: 1,
+                  background: '#eee',
+                  border: 'none',
+                  borderRadius: '4px',
+                  padding: '10px',
+                  cursor: 'pointer'
+                }}
+              >
+                Clear
+              </button>
+            </div>
+          </FiltersPanel>
+        )}
+      </SearchContainer>
+      
+      <TabsContainer>
+        <Tab 
+          active={activeTab === 'all'} 
+          onClick={() => handleTabChange('all')}
+        >
+          All Programs
+        </Tab>
+        <Tab 
+          active={activeTab === 'top'} 
+          onClick={() => handleTabChange('top')}
+        >
+          Top Programs
+        </Tab>
+        <Tab 
+          active={activeTab === 'fast'} 
+          onClick={() => handleTabChange('fast')}
+        >
+          Fast Acceptance
+        </Tab>
+        <Tab 
+          active={activeTab === 'intake'} 
+          onClick={() => handleTabChange('intake')}
+        >
+          Intake Offer
+        </Tab>
+      </TabsContainer>
+      
+      {loading ? (
+        <ProgramsLoadingSkeleton />
+      ) : error ? (
+        <div style={{ textAlign: 'center', padding: '2rem', color: '#e74c3c' }}>
+          <div>{error}</div>
+          <button onClick={handleRetry}>Retry</button>
+        </div>
+      ) : (
+        <>
+          <ProgramsGrid>
+            {getCurrentPagePrograms().length > 0 ? (
+              getCurrentPagePrograms().map((program: Program) => (
+                <ProgramCard key={program.id} program={program} />
+              ))
+            ) : (
+              <NoResultsContent />
+            )}
+          </ProgramsGrid>
+          
+          {/* Pagination and debug info */}
+          {!loading && !error && (
+            <div>
+              {/* Debug info - comment out in production */}
+              <div style={{ marginBottom: '1rem', padding: '0.5rem', background: '#f8f9fa', borderRadius: '4px', fontSize: '0.8rem' }}>
+                <div><strong>Programs:</strong> {filteredPrograms.length} total ({getCurrentPagePrograms().length} on current page)</div>
+                <div><strong>Pagination:</strong> Page {currentPage} of {totalPages} (showing {programsPerPage} per page)</div>
+              </div>
+              
+              <PaginationContainer>
+                <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                  <div style={{ color: '#666' }}>
+                    {filteredPrograms.length > 0 ? (
+                      <>
+                        Showing {Math.min(filteredPrograms.length, (currentPage - 1) * programsPerPage + 1)} - {Math.min(filteredPrograms.length, currentPage * programsPerPage)} of {filteredPrograms.length} programs
+                      </>
+                    ) : (
+                      <>No programs match your filters</>
+                    )}
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <label htmlFor="page-size" style={{ fontSize: '0.9rem', color: '#666' }}>Programs per page:</label>
+                    <select 
+                      id="page-size"
+                      value={programsPerPage} 
+                      onChange={(e) => {
+                        const newValue = Number(e.target.value);
+                        setProgramsPerPage(newValue);
+                        setCurrentPage(1);
+                        
+                        // Force immediate reload with new page size
+                        setTimeout(() => {
+                          loadPrograms();
+                        }, 0);
+                      }}
+                      style={{ padding: '4px 8px', borderRadius: '4px', border: '1px solid #ddd' }}
+                    >
+                      <option value="12">12</option>
+                      <option value="24">24</option>
+                      <option value="48">48</option>
+                      <option value="96">96</option>
+                      <option value={9999}>All</option>
+                    </select>
+                  </div>
+                </div>
+                
+                {/* Page navigation buttons - always show if there are multiple pages */}
+                {totalPages > 1 && programsPerPage < 1000 && (
+                  <div style={{ 
+                    display: 'flex', 
+                    justifyContent: 'center', 
+                    gap: '0.5rem',
+                    width: '100%',
+                    marginTop: '1rem',
+                    padding: '0.5rem'
+                  }}>
+                    <PageButton
+                      onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
+                      disabled={currentPage === 1}
+                      style={{ opacity: currentPage === 1 ? 0.5 : 1 }}
+                    >
+                      <FontAwesomeIcon icon={faChevronLeft} />
+                    </PageButton>
+                    
+                    {Array.from({ length: totalPages }, (_, i) => i + 1)
+                      .filter(page => page <= 3 || page > totalPages - 2 || Math.abs(page - currentPage) <= 1)
+                      .map((page, index, array) => (
+                        <React.Fragment key={page}>
+                          {index > 0 && array[index - 1] !== page - 1 && (
+                            <span style={{ alignSelf: 'center' }}>...</span>
+                          )}
+                          <PageButton
+                            key={page}
+                            active={page === currentPage}
+                            onClick={() => handlePageChange(page)}
+                          >
+                            {page}
+                          </PageButton>
+                        </React.Fragment>
+                      ))}
+                    
+                    <PageButton
+                      onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
+                      disabled={currentPage === totalPages}
+                      style={{ opacity: currentPage === totalPages ? 0.5 : 1 }}
+                    >
+                      <FontAwesomeIcon icon={faChevronRight} />
+                    </PageButton>
+                  </div>
+                )}
+              </PaginationContainer>
+            )}
+          </div>
+        </> 
+      )}
+    </PageContainer>
+  );
+};
+
+export default ProgramsPage; 

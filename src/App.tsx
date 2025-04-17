@@ -9,6 +9,7 @@ import RegisterPage from './pages/RegisterPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import DashboardPage from './pages/DashboardPage';
 import ProfilePage from './pages/ProfilePage';
+import ApplicationPage from './pages/ApplicationPage';
 import GlobalStyles from './globalStyles';
 import './App.css';
 
@@ -34,6 +35,7 @@ function App() {
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/apply/:programId" element={<ApplicationPage />} />
           {/* Add more routes as needed */}
         </Routes>
       </Layout>

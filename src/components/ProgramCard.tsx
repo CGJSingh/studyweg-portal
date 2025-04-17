@@ -11,8 +11,6 @@ import {
   faBookmark,
   faStar,
   faTag,
-  faEye,
-  faUsers
 } from '@fortawesome/free-solid-svg-icons';
 
 interface ProgramCardProps {
@@ -20,54 +18,37 @@ interface ProgramCardProps {
 }
 
 const Card = styled.div`
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  overflow: hidden;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
   display: flex;
   flex-direction: column;
-  height: 100%;
+  background-color: #fff;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
   cursor: pointer;
-  position: relative;
-  border: 1px solid transparent;
-
+  transition: all 0.3s ease;
+  height: 100%;
+  border: 1px solid #e0e0e0;
+  
   &:hover {
-    transform: translateY(-6px);
-    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.15);
-    border-color: rgba(243, 156, 18, 0.3);
-  }
-  
-  &:after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 0;
-    height: 3px;
-    background-color: #f39c12;
-    transition: width 0.3s ease;
-  }
-  
-  &:hover:after {
-    width: 100%;
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+    border-color: #bcd0e6;
   }
 `;
 
 const Badge = styled.div`
   position: absolute;
-  top: 10px;
+  bottom: 10px;
   left: 10px;
-  background-color: rgba(12, 59, 94, 0.85);
+  background-color: rgba(12, 59, 94, 0.9);
   color: white;
   padding: 0.3rem 0.8rem;
   border-radius: 20px;
-  font-size: 0.7rem;
-  font-weight: 600;
+  font-size: 0.75rem;
+  font-weight: 500;
   z-index: 1;
-  backdrop-filter: blur(4px);
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-  transform: translateY(0);
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
   transition: transform 0.2s ease, background-color 0.2s ease;
   
   ${Card}:hover & {
@@ -117,29 +98,6 @@ const BookmarkButton = styled.button`
   
   &:active {
     transform: scale(0.95);
-  }
-`;
-
-const PopularityBadge = styled.div`
-  position: absolute;
-  top: 10px;
-  right: 58px;
-  background-color: rgba(243, 156, 18, 0.9);
-  color: white;
-  padding: 0.3rem 0.8rem;
-  border-radius: 20px;
-  font-size: 0.7rem;
-  font-weight: 600;
-  z-index: 1;
-  display: flex;
-  align-items: center;
-  gap: 0.3rem;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-  backdrop-filter: blur(4px);
-  opacity: 0.9;
-  
-  ${Card}:hover & {
-    opacity: 1;
   }
 `;
 
@@ -272,20 +230,6 @@ const ApplyButton = styled.button`
   }
 `;
 
-const PopularityMetrics = styled.div`
-  display: flex;
-  gap: 0.8rem;
-  font-size: 0.75rem;
-  color: #666;
-  margin-top: 0.5rem;
-`;
-
-const Metric = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 0.3rem;
-`;
-
 const ProgramCard: React.FC<ProgramCardProps> = ({ program }) => {
   const navigate = useNavigate();
   
@@ -299,13 +243,6 @@ const ProgramCard: React.FC<ProgramCardProps> = ({ program }) => {
   // Extract just the number of years for display
   const yearsMatch = duration?.match(/(\d+)/);
   const years = yearsMatch ? yearsMatch[0] : '';
-  
-  // Generate random metrics for views and applications
-  const views = Math.floor(Math.random() * 1000) + 100;
-  const applications = Math.floor(Math.random() * 100) + 10;
-  
-  // Determine if program is popular (for demo purposes)
-  const isPopular = views > 500;
 
   const handleClick = () => {
     navigate(`/programs/${program.id}`);
@@ -322,11 +259,6 @@ const ProgramCard: React.FC<ProgramCardProps> = ({ program }) => {
       <ImageContainer>
         {category && (
           <Badge>{category}</Badge>
-        )}
-        {isPopular && (
-          <PopularityBadge>
-            <FontAwesomeIcon icon={faStar} /> Popular
-          </PopularityBadge>
         )}
         <Image 
           src={program.images?.[0]?.src || '/placeholder-program.jpg'} 
@@ -373,17 +305,6 @@ const ProgramCard: React.FC<ProgramCardProps> = ({ program }) => {
             </Tag>
           )}
         </TagsContainer>
-        
-        <PopularityMetrics>
-          <Metric>
-            <FontAwesomeIcon icon={faEye} style={{ color: '#666' }} />
-            {views} views
-          </Metric>
-          <Metric>
-            <FontAwesomeIcon icon={faUsers} style={{ color: '#666' }} />
-            {applications} applicants
-          </Metric>
-        </PopularityMetrics>
         
         <MetaInfo>
           <Rating>

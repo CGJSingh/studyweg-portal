@@ -6,13 +6,16 @@ import {
   faFacebookF, 
   faTwitter, 
   faInstagram, 
-  faLinkedinIn 
+  faLinkedinIn,
+  faYoutube,
+  faTiktok
 } from '@fortawesome/free-brands-svg-icons';
 
 const FooterContainer = styled.footer`
-  background-color: #f8f9fa;
+  background-color: #0c3b5e;
   padding: 3rem 2rem;
   margin-top: 3rem;
+  color: white;
 `;
 
 const FooterContent = styled.div`
@@ -30,7 +33,7 @@ const FooterSection = styled.div`
 
 const FooterTitle = styled.h3`
   font-size: 1.2rem;
-  color: #0c3b5e;
+  color: white;
   margin-bottom: 1.5rem;
   position: relative;
   
@@ -46,7 +49,7 @@ const FooterTitle = styled.h3`
 `;
 
 const FooterLink = styled(Link)`
-  color: #555;
+  color: #f0f0f0;
   text-decoration: none;
   margin-bottom: 0.8rem;
   transition: color 0.2s ease;
@@ -57,7 +60,7 @@ const FooterLink = styled(Link)`
 `;
 
 const FooterText = styled.p`
-  color: #555;
+  color: #f0f0f0;
   line-height: 1.6;
   margin-bottom: 1rem;
 `;
@@ -66,15 +69,25 @@ const SocialLinks = styled.div`
   display: flex;
   gap: 1rem;
   margin-top: 1rem;
+  flex-wrap: wrap;
 `;
 
 const SocialLink = styled.a`
-  color: #555;
+  color: #f0f0f0;
   font-size: 1.2rem;
-  transition: color 0.2s ease;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.1);
   
   &:hover {
-    color: #f39c12;
+    color: white;
+    background-color: #f39c12;
+    transform: translateY(-3px);
   }
 `;
 
@@ -82,7 +95,7 @@ const BottomBar = styled.div`
   max-width: 1200px;
   margin: 2rem auto 0;
   padding-top: 1.5rem;
-  border-top: 1px solid #ddd;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -91,7 +104,7 @@ const BottomBar = styled.div`
 `;
 
 const Copyright = styled.p`
-  color: #777;
+  color: #f0f0f0;
   font-size: 0.9rem;
 `;
 
@@ -101,7 +114,7 @@ const BottomLinks = styled.div`
 `;
 
 const BottomLink = styled(Link)`
-  color: #777;
+  color: #f0f0f0;
   font-size: 0.9rem;
   text-decoration: none;
   
@@ -120,20 +133,6 @@ const Footer: React.FC = () => {
           <FooterText>
             StudyWeg is dedicated to helping students achieve their educational and career goals through our comprehensive programs and support services.
           </FooterText>
-          <SocialLinks>
-            <SocialLink href="https://facebook.com" target="_blank" rel="noopener noreferrer">
-              <FontAwesomeIcon icon={faFacebookF} />
-            </SocialLink>
-            <SocialLink href="https://twitter.com" target="_blank" rel="noopener noreferrer">
-              <FontAwesomeIcon icon={faTwitter} />
-            </SocialLink>
-            <SocialLink href="https://instagram.com" target="_blank" rel="noopener noreferrer">
-              <FontAwesomeIcon icon={faInstagram} />
-            </SocialLink>
-            <SocialLink href="https://linkedin.com" target="_blank" rel="noopener noreferrer">
-              <FontAwesomeIcon icon={faLinkedinIn} />
-            </SocialLink>
-          </SocialLinks>
         </FooterSection>
         
         <FooterSection>
@@ -157,14 +156,36 @@ const Footer: React.FC = () => {
         <FooterSection>
           <FooterTitle>Contact Us</FooterTitle>
           <FooterText>
-            123 Education Street<br />
-            Toronto, ON M5V 2K7<br />
+            7800 Keele St. Unit 206<br />
+            Concord, ON, L4K 4G7<br />
             Canada
           </FooterText>
           <FooterText>
-            <strong>Phone:</strong> +1 (123) 456-7890<br />
-            <strong>Email:</strong> info@studyweg.com
+            <strong>Phone:</strong> +1 (365) 775-2128<br />
+            <strong>Email:</strong> info@studyweg.ca
           </FooterText>
+          
+          <FooterTitle style={{ marginTop: '1rem' }}>Follow Us</FooterTitle>
+          <SocialLinks>
+            <SocialLink href="https://linkedin.com/in/studyweg" target="_blank" rel="noopener noreferrer" title="LinkedIn">
+              <FontAwesomeIcon icon={faLinkedinIn} />
+            </SocialLink>
+            <SocialLink href="https://instagram.com/studywegofficial" target="_blank" rel="noopener noreferrer" title="Instagram">
+              <FontAwesomeIcon icon={faInstagram} />
+            </SocialLink>
+            <SocialLink href="https://facebook.com/studyweg" target="_blank" rel="noopener noreferrer" title="Facebook">
+              <FontAwesomeIcon icon={faFacebookF} />
+            </SocialLink>
+            <SocialLink href="https://twitter.com/studyweg" target="_blank" rel="noopener noreferrer" title="Twitter">
+              <FontAwesomeIcon icon={faTwitter} />
+            </SocialLink>
+            <SocialLink href="https://youtube.com/@studyweg" target="_blank" rel="noopener noreferrer" title="YouTube">
+              <FontAwesomeIcon icon={faYoutube} />
+            </SocialLink>
+            <SocialLink href="https://tiktok.com/@studyweg" target="_blank" rel="noopener noreferrer" title="TikTok">
+              <FontAwesomeIcon icon={faTiktok} />
+            </SocialLink>
+          </SocialLinks>
         </FooterSection>
       </FooterContent>
       
