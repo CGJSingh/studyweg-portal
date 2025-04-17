@@ -29,7 +29,8 @@ import {
   faPalette,
   faAtom,
   faGavel,
-  faChalkboardTeacher
+  faChalkboardTeacher,
+  faChevronRight
 } from '@fortawesome/free-solid-svg-icons';
 import { ProgramDetailsSkeleton } from '../components/SkeletonLoaders';
 
@@ -1184,9 +1185,9 @@ const ProgramDetailsPage: React.FC = () => {
                 <RequirementText>May 15, 2025 for Fall admission</RequirementText>
               </div>
             </RequirementItem>
-            <ActionButton href={program.permalink} target="_blank" rel="noopener noreferrer">
+            <ActionButton as={Link} to={`/apply/${program.id}`}>
               Apply Now
-              <FontAwesomeIcon icon={faExternalLinkAlt} />
+              <FontAwesomeIcon icon={faChevronRight} />
             </ActionButton>
             <SecondaryButton onClick={handleBookmark}>
               {bookmarked ? 'Bookmarked' : 'Bookmark Program'}

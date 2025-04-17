@@ -890,6 +890,9 @@ const SavedSearchAction = styled.button<{ color?: string }>`
   }
 `;
 
+// Add this new constant for the direct API endpoint
+const DIRECT_API_ENDPOINT = 'https://studyweg.com/wp-json/wc/v3/products?consumer_key=ck_9a7d01544fb71e45218afee6fed7f9f8a25d1b0f&consumer_secret=cs_f18193b595778c1cc726d336247e9c908aec3370&per_page=100';
+
 const ProgramsPage: React.FC = () => {
   const [programs, setPrograms] = useState<Program[]>([]);
   const [filteredPrograms, setFilteredPrograms] = useState<Program[]>([]);
@@ -1049,10 +1052,121 @@ const ProgramsPage: React.FC = () => {
     }
   }, []);
 
-  // Modify the loadPrograms function to fetch additional programs if needed
-    const loadPrograms = async () => {
+  // Add a new function to extract filter options from programs
+  const extractFilterOptions = (programs: Program[]) => {
+        const durations = new Set<string>();
+        const countries = new Set<string>();
+        const categories = new Set<string>();
+    const universities = new Set<string>();
+    const levels = new Set<string>();
+
+    programs.forEach(program => {
+          // Extract durations
+          const duration = program.attributes?.find(attr => attr.name === "Duration")?.options[0];
+          if (duration) durations.add(duration);
+          
+          // Extract countries
+      const country = program.attributes?.find(attr => attr.name === "Country")?.options[0];
+      if (country) countries.add(country);
+
+      // Extract program levels
+      const level = program.attributes?.find(attr => attr.name === "Program Level")?.options[0];
+      if (level) levels.add(level);
+
+      // Extract universities/schools
+      const school = program.attributes?.find(attr => attr.name === "School")?.options[0];
+      if (school) universities.add(school);
+          
+          // Extract categories
+          program.categories.forEach(category => {
+        if (category.name) categories.add(category.name);
+          });
+        });
+        
+    // Update the filter options state
+        setFilterOptions({
+      levels: Array.from(levels).sort(),
+      durations: Array.from(durations).sort(),
+      countries: Array.from(countries).sort(),
+      categories: Array.from(categories).sort(),
+      universities: Array.from(universities).sort()
+    });
+
+    console.log('Filter options updated:', {
+          levels: Array.from(levels),
+          durations: Array.from(durations),
+          countries: Array.from(countries),
+      categories: Array.from(categories),
+      universities: Array.from(universities)
+    });
+  };
+
+  // Add a new function to fetch data directly from the API endpoint
+  const fetchDirectProgramData = async () => {
+    try {
+      console.log('Fetching program data directly from API...');
+      const response = await fetch(DIRECT_API_ENDPOINT);
+      if (!response.ok) {
+        throw new Error(`API request failed with status ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('Direct API data received:', data.length, 'programs');
+      
+      // Extract filter options from the fetched data
+      extractFilterOptions(data);
+      
+      return data as Program[];
+    } catch (error) {
+      console.error('Error fetching direct program data:', error);
+      return [] as Program[];
+    }
+  };
+
+  // Add a useEffect to populate filter options when the component mounts
+  useEffect(() => {
+    const populateFilterOptions = async () => {
       try {
-        setLoading(true);
+        // First try to get all programs from our existing API
+        let allPrograms: Program[] = [];
+        
+        try {
+          // Try to get programs from our regular API first
+          const result = await fetchAllPrograms();
+          if (result && 'programs' in result) {
+            allPrograms = result.programs as Program[] || [];
+            
+            if (allPrograms.length > 0) {
+              console.log('Using programs from regular API for filter options');
+              extractFilterOptions(allPrograms);
+            }
+          }
+        } catch (error) {
+          console.warn('Failed to get programs from regular API:', error);
+        }
+        
+        // If we couldn't get programs from our regular API or there were none, try the direct API
+        if (allPrograms.length === 0) {
+          console.log('Fetching filter options from direct API...');
+          const directData = await fetchDirectProgramData();
+          if (directData.length > 0) {
+            console.log('Using programs from direct API for filter options');
+          } else {
+            console.warn('No programs found in direct API');
+          }
+        }
+      } catch (error) {
+        console.error('Failed to populate filter options:', error);
+      }
+    };
+    
+    populateFilterOptions();
+  }, []);
+
+  // Modify the loadPrograms function to extract filter options from the loaded programs
+  const loadPrograms = async () => {
+    try {
+      setLoading(true);
       setError(null);
       setIsOfflineMode(false);
       console.log('Fetching programs for page:', currentPage);
@@ -1060,7 +1174,7 @@ const ProgramsPage: React.FC = () => {
       // Build extra parameters based on active filters
       const extraParams: Record<string, string> = {
         per_page: programsPerPage.toString(),
-        page: currentPage.toString(),
+        page: "1", // Always request from page 1 when applying filters
         sort: 'name' // Always sort by name ascending by default
       };
       
@@ -1102,6 +1216,9 @@ const ProgramsPage: React.FC = () => {
       // Add a timestamp to prevent caching issues
       extraParams['timestamp'] = Date.now().toString();
       
+      // Request a larger number of results per page to get as many as possible at once
+      extraParams['per_page'] = '100'; // Request more items per page for better filtering
+      
       // Request that all filters be applied server-side
       extraParams['apply_all_filters'] = 'true';
       
@@ -1110,212 +1227,75 @@ const ProgramsPage: React.FC = () => {
       
       console.log('Fetching with filters:', extraParams);
       
-      // Fetch the filtered and paginated data
-      const result = await fetchPrograms(currentPage, {
+      // Fetch the filtered data
+      const result = await fetchPrograms(1, { // Always fetch from page 1
         extraParams,
         forceRefresh: true // Force refresh to ensure we get fresh data with the filters
       });
       
+      // Extract filter options from these programs if we haven't already
+      if (filterOptions.countries.length === 0 || filterOptions.durations.length === 0 ||
+          filterOptions.categories.length === 0 || filterOptions.universities.length === 0) {
+        console.log('Extracting filter options from fetched programs');
+        if (Array.isArray(result.programs)) {
+          extractFilterOptions(result.programs);
+        }
+        
+        // If we still don't have filter options, try the direct API
+        if (filterOptions.countries.length === 0 || filterOptions.durations.length === 0 ||
+            filterOptions.categories.length === 0 || filterOptions.universities.length === 0) {
+          console.log('Still missing filter options, trying direct API');
+          fetchDirectProgramData();
+        }
+      }
+      
       // Set the total count of filtered results immediately so we can calculate valid pages
       const resultTotalCount = 'totalCount' in result && typeof result.totalCount === 'number' 
         ? result.totalCount 
-        : (result.totalPages * programsPerPage);
+        : (result.totalPages * parseInt(extraParams['per_page']));
       
       setTotalFilteredResults(resultTotalCount);
       
       // Calculate the actual number of pages needed for the filtered results
       const calculatedTotalPages = Math.max(1, Math.ceil(resultTotalCount / programsPerPage));
       
-      // If there are no programs on the current page but we have total results > 0
-      if (result.programs.length === 0 && resultTotalCount > 0) {
-        console.log(`Current page ${currentPage} has no results but there are ${resultTotalCount} total results.`);
-        
-        // If we're moving forward (or current page is beyond calculated pages)
-        if (currentPage > 1 && currentPage >= calculatedTotalPages) {
-          console.log(`Redirecting to the last page with content: ${calculatedTotalPages}`);
-          setCurrentPage(calculatedTotalPages);
-          return; // This will trigger the useEffect to reload with the valid page
-        } 
-        // If we're trying to view page 1 and it's empty, but there are results
-        else if (currentPage === 1 && calculatedTotalPages > 1) {
-          // Try page 2, as page 1 might be empty due to some filtering quirk
-          console.log(`Page 1 is empty but there are results. Trying page 2.`);
-          setCurrentPage(2);
-          return; // This will trigger the useEffect to reload with page 2
-        }
-        // If we're on a page in the middle that's empty, try to find the next page with content
-        else if (currentPage > 1 && currentPage < calculatedTotalPages) {
-          // Try the next page
-          console.log(`Page ${currentPage} is empty. Trying page ${currentPage + 1}.`);
-          setCurrentPage(currentPage + 1);
-          return; // This will trigger the useEffect to reload with the next page
-        }
+      // If we're on a page that doesn't exist anymore after filtering, reset to page 1
+      if (currentPage > calculatedTotalPages) {
+        setCurrentPage(1);
       }
-
-      // If we have fewer programs than the maximum per page and we're not on the last page
-      if (result.programs.length < programsPerPage && currentPage < calculatedTotalPages) {
-        console.log(`Page ${currentPage} has only ${result.programs.length} programs, fetching more from next page`);
+      
+      // Get the appropriate page of results based on currentPage
+      let filteredPrograms = result.programs;
+      
+      // If we have results, make sure to show the correct page
+      if (filteredPrograms.length > 0) {
+        const startIndex = (currentPage - 1) * programsPerPage;
+        const endIndex = Math.min(startIndex + programsPerPage, filteredPrograms.length);
         
-        // Prepare to fetch additional programs from the next page
-        const nextPageParams = {...extraParams};
-        nextPageParams.page = (currentPage + 1).toString();
+        // Slice the programs to get the correct page
+        const currentPagePrograms = filteredPrograms.slice(startIndex, endIndex);
         
-        try {
-          // Fetch programs from the next page to fill the empty space
-          const nextPageResult = await fetchPrograms(currentPage + 1, {
-            extraParams: nextPageParams,
-            forceRefresh: true
-          });
-          
-          // Calculate how many additional programs we need
-          const additionalNeeded = programsPerPage - result.programs.length;
-          
-          // Take only as many programs as needed from the next page
-          const additionalPrograms = nextPageResult.programs.slice(0, additionalNeeded);
-          console.log(`Fetched ${additionalPrograms.length} additional programs from page ${currentPage + 1}`);
-          
-          // Combine programs from current page and next page
-          const combinedPrograms = [...result.programs, ...additionalPrograms];
-          setPrograms(combinedPrograms);
-          setFilteredPrograms(combinedPrograms);
-          
-          // Add this line to store info about the result
-          setLastAPIResult({
-            programsCount: result.programs.length,
-            hasExtraPrograms: additionalPrograms.length > 0,
-            extraProgramsCount: additionalPrograms.length
-          });
-          
-          console.log(`Now showing ${combinedPrograms.length} programs on page ${currentPage}`);
-        } catch (nextPageError) {
-          console.error('Error fetching additional programs:', nextPageError);
-          // If we can't fetch more, just use what we have
-        setPrograms(result.programs);
-        setFilteredPrograms(result.programs);
-        }
+        setPrograms(filteredPrograms); // Store all programs
+        setFilteredPrograms(currentPagePrograms); // Show only current page
       } else {
-        // Normal case: just set the programs from the current page
-        if (result.programs.length === 0) {
-          console.warn('No programs received for the current page');
-        } else {
-          console.log('Received programs:', result.programs.length);
-        }
-        
-        setPrograms(result.programs);
-        setFilteredPrograms(result.programs);
-
-        // Add this line to store info about the result
-        setLastAPIResult({
-          programsCount: result.programs.length,
-          hasExtraPrograms: false,
-          extraProgramsCount: 0
-        });
+        setPrograms([]);
+        setFilteredPrograms([]);
       }
       
-      // If there are no results at all for any page
-      if (resultTotalCount === 0) {
-        console.log('No results found for the filters, staying on page 1');
-        setCurrentPage(1); // Ensure we're on page 1 to show the "no results" message
-      }
-      
-      // Use the calculated total pages based on actual result count
+      // Update the total pages based on the filtered results
       setTotalPages(calculatedTotalPages);
-      
-      // Only fetch filter options if they haven't been loaded yet
-      if (filterOptions.levels.length === 0 || filterOptions.countries.length === 0) {
-        try {
-          const allPrograms = await fetchAllPrograms();
-          console.log('Fetched all programs for filters:', allPrograms.length);
-          
-          // Extract filter options from all programs
-        const levels = new Set<string>();
-        const durations = new Set<string>();
-        const countries = new Set<string>();
-        const categories = new Set<string>();
-          const universities = new Set<string>();
-        
-          allPrograms.forEach(program => {
-          // Extract levels
-          const level = program.attributes?.find(attr => attr.name === "Program Level")?.options[0];
-          if (level) levels.add(level);
-          
-          // Extract durations
-          const duration = program.attributes?.find(attr => attr.name === "Duration")?.options[0];
-          if (duration) durations.add(duration);
-          
-            // Extract countries from both attribute and meta_data
-            if (program.attributes?.find(attr => attr.name === "Country")?.options[0]) {
-              const countryAttr = program.attributes?.find(attr => attr.name === "Country" || attr.name === "pa_country")?.options[0];
-              if (countryAttr) {
-                countries.add(countryAttr);
-                console.log('Added country from attribute:', countryAttr);
-              }
-            }
-            
-          if (program.institution?.location) {
-            countries.add(program.institution.location);
-              console.log('Added country from institution:', program.institution.location);
-            } else {
-              // Try to find location from meta_data if institution object is not available
-              const locationMeta = program.meta_data?.find(meta => 
-                meta.key === '_institution_location' || 
-                meta.key === 'institution_location'
-              );
-              if (locationMeta && locationMeta.value) {
-                countries.add(locationMeta.value);
-                console.log('Added country from meta_data:', locationMeta.value);
-              }
-            }
-            
-            // Extract universities from both attribute and meta_data
-            if (program.attributes?.find(attr => attr.name === "School")?.options[0]) {
-              const schoolAttr = program.attributes?.find(attr => attr.name === "School" || attr.name === "pa_school")?.options[0];
-              if (schoolAttr) {
-                universities.add(schoolAttr);
-                console.log('Added university from attribute:', schoolAttr);
-              }
-            }
-            
-            if (program.institution?.name) {
-              universities.add(program.institution.name);
-              console.log('Added university from institution:', program.institution.name);
-            } else {
-              // Try to find institution name from meta_data if institution object is not available
-              const institutionMeta = program.meta_data?.find(meta => 
-                meta.key === '_institution_name' || 
-                meta.key === 'institution_name'
-              );
-              if (institutionMeta && institutionMeta.value) {
-                universities.add(institutionMeta.value);
-                console.log('Added university from meta_data:', institutionMeta.value);
-              }
-          }
-          
-          // Extract categories
-          program.categories.forEach(category => {
-            categories.add(category.name);
-          });
-        });
-        
-        setFilterOptions({
-          levels: Array.from(levels),
-          durations: Array.from(durations),
-          countries: Array.from(countries),
-            categories: Array.from(categories),
-            universities: Array.from(universities)
-          });
-        } catch (filterError) {
-          console.error('Error fetching filter options:', filterError);
-          checkOfflineMode();
-        }
-      }
-    } catch (mainError) {
-      console.error('Error in main data fetch:', mainError);
-      setError('Failed to load program data. Using sample data instead.');
+    } catch (error) {
+      console.error('Error fetching programs:', error);
+      setError('Failed to load program data. Please try again.');
       setIsOfflineMode(true);
       setOfflineMode(true);
-      setPrograms([]);
-      setFilteredPrograms([]);
+      
+      // If we've failed to load programs, try to at least get filter options from the direct API
+      if (filterOptions.countries.length === 0 || filterOptions.durations.length === 0 ||
+          filterOptions.categories.length === 0 || filterOptions.universities.length === 0) {
+        console.log('Failed to load programs. Trying to get filter options from direct API');
+        fetchDirectProgramData();
+      }
       } finally {
         setLoading(false);
       }
@@ -1339,17 +1319,17 @@ const ProgramsPage: React.FC = () => {
     loadPrograms();
   }, [currentPage]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Modified useEffect for filter and search changes to reload data
+  // Update the useEffect that responds to filter changes
   useEffect(() => {
-    // When filters or search change, reset to page 1 and reload data
-    if (currentPage === 1) {
-      // Already on page 1, just reload with new filters
-      // Clear cache to ensure we get fresh data with the new filters
-      clearProgramsCache();
-      loadPrograms();
-    } else {
-      // Not on page 1, need to reset page which will trigger the other useEffect
+    // Always clear the cache and reload data when filters change
+    clearProgramsCache();
+    
+    // Always reset to page 1 when filters are applied
+    if (currentPage !== 1) {
       setCurrentPage(1);
+    } else {
+      // If already on page 1, just reload the programs with the new filters
+      loadPrograms();
     }
   }, [searchQuery, activeTab, filters, sortOption, programTypes]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -1754,10 +1734,9 @@ const ProgramsPage: React.FC = () => {
     window.scrollTo(0, 0); // Scroll to top when changing page
   };
 
-  // Get current programs for the current page
+  // Update the getCurrentPagePrograms function to handle pagination
   const getCurrentPagePrograms = () => {
-    // When using API pagination, simply return the filtered programs
-    // since the API already returns the right page
+    // Simply return the filteredPrograms since we've already paginated them in loadPrograms
     return filteredPrograms;
   };
 
@@ -1812,18 +1791,22 @@ const ProgramsPage: React.FC = () => {
     // Always reset to page 1 when filters are applied
     setCurrentPage(1);
     
-    // Important: We need to clear the cache to make sure we get fresh data
+    // Clear cache to make sure we get fresh data
     clearProgramsCache();
     
     // Close filter panel
     setShowFilters(false);
     
-    // Load new programs with the updated filters - this will get called via the useEffect
-    // but we set loading state immediately for better UX
+    // Set loading state immediately for better UX
     setLoading(true);
     
     // Reset total filtered results until new data is loaded
     setTotalFilteredResults(0);
+    
+    // Force immediate reload with new filters instead of waiting for useEffect
+    setTimeout(() => {
+      loadPrograms();
+    }, 0);
   };
 
   // Update clear filters function
@@ -2023,14 +2006,14 @@ const ProgramsPage: React.FC = () => {
       <SearchContainer>
         <SearchFilterRow>
           <SearchInputWrapper>
-            <SearchIcon>
-              <FontAwesomeIcon icon={faSearch} />
-            </SearchIcon>
-            <SearchInput 
-              type="text" 
+        <SearchIcon>
+          <FontAwesomeIcon icon={faSearch} />
+        </SearchIcon>
+        <SearchInput 
+          type="text" 
               placeholder="Search for programs, universities, or subject areas..." 
               value={searchInput}
-              onChange={handleSearchChange}
+          onChange={handleSearchChange}
               onKeyPress={handleSearchKeyPress}
               onFocus={() => searchInput.length >= 2 && suggestions.length > 0 && setShowSuggestions(true)}
               onBlur={() => setTimeout(() => handleClickOutside(), 200)}
@@ -2103,12 +2086,12 @@ const ProgramsPage: React.FC = () => {
             
             <FilterButton 
               ref={filterButtonRef}
-              onClick={toggleFilters}
-            >
+            onClick={toggleFilters}
+          >
               <FontAwesomeIcon icon={faFilter} />
               Filter {activeFilterCount > 0 && `(${activeFilterCount})`}
             </FilterButton>
-          </div>
+        </div>
         </SearchFilterRow>
         
         {showSuggestions && (
@@ -2158,20 +2141,20 @@ const ProgramsPage: React.FC = () => {
           <FiltersContainer 
             ref={filtersRef}
           >
-            <FilterHeader>
-              <FilterTitle>
-                <FontAwesomeIcon icon={faFilter} />
+          <FilterHeader>
+            <FilterTitle>
+              <FontAwesomeIcon icon={faFilter} />
                 Filter & Sort Programs
-              </FilterTitle>
-              
-              {activeFilterCount > 0 && (
-                <ClearFiltersButton onClick={clearAllFilters}>
-                  <FontAwesomeIcon icon={faTimes} />
-                  Clear All Filters
-                </ClearFiltersButton>
-              )}
-            </FilterHeader>
+            </FilterTitle>
             
+            {activeFilterCount > 0 && (
+              <ClearFiltersButton onClick={clearAllFilters}>
+                <FontAwesomeIcon icon={faTimes} />
+                Clear All Filters
+              </ClearFiltersButton>
+            )}
+          </FilterHeader>
+          
             {/* Sort Options */}
             <FilterGroup>
               <FilterGroupTitle>
@@ -2460,7 +2443,7 @@ const ProgramsPage: React.FC = () => {
             >
               Apply Filters
             </FilterButton>
-          </FiltersContainer>
+        </FiltersContainer>
         )}
       </SearchContainer>
       
