@@ -452,20 +452,26 @@ export const ProgramDetailsSkeleton: React.FC = () => {
                 <Skeleton height={30} width={120} style={{ borderRadius: '4px' }} />
               </div>
               
-              {/* Text overlay */}
+              {/* Text overlay with enhanced contrast */}
               <div style={{ 
                 position: 'absolute', 
                 bottom: '0', 
                 left: '0', 
                 right: '0',
                 padding: '2rem',
-                background: 'linear-gradient(to top, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0) 100%)'
+                background: 'linear-gradient(to top, rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 0.5) 40%, rgba(0, 0, 0, 0) 100%)'
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
                   <Skeleton circle height={16} width={16} baseColor="#757575" highlightColor="#9e9e9e" />
                   <Skeleton height={22} width={200} baseColor="#757575" highlightColor="#9e9e9e" />
                 </div>
-                <Skeleton height={40} width={350} baseColor="#e0e0e0" highlightColor="#f5f5f5" style={{ marginBottom: '1rem' }} />
+                {/* Program title with better contrast */}
+                <Skeleton height={55} width={350} baseColor="#e0e0e0" highlightColor="#f5f5f5" style={{ 
+                  marginBottom: '1rem',
+                  background: 'linear-gradient(rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.2))',
+                  borderRadius: '4px',
+                  padding: '10px 0'
+                }} />
                 
                 {/* Tags */}
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginTop: '1rem' }}>
@@ -478,46 +484,93 @@ export const ProgramDetailsSkeleton: React.FC = () => {
             
             {/* Content Sections */}
             <div style={{ padding: '2rem' }}>
-              {/* Overview Section */}
-              <div style={{ marginBottom: '2rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
-                  <Skeleton circle height={24} width={24} />
-                  <Skeleton height={30} width={200} />
-                </div>
-                <Skeleton height={18} style={{ marginBottom: '1rem' }} />
-                <Skeleton height={18} style={{ marginBottom: '1rem' }} />
-                <Skeleton height={18} style={{ marginBottom: '1rem' }} />
-                <Skeleton height={18} width="75%" />
-              </div>
-              
-              {/* Program Details Highlight */}
+              {/* Program Overview Section - Moved up and renamed */}
               <div style={{ 
-                backgroundColor: '#f8f9fa', 
-                padding: '1.5rem', 
-                borderRadius: '8px',
-                marginBottom: '2rem'
+                background: 'linear-gradient(135deg, #f8f9fb, #e6eef7)',
+                padding: '2rem',
+                borderRadius: '16px',
+                marginBottom: '2rem',
+                position: 'relative',
+                overflow: 'hidden',
+                boxShadow: '0 10px 30px rgba(0, 0, 0, 0.06)',
+                textAlign: 'left'
               }}>
-                <Skeleton height={24} width={150} style={{ marginBottom: '1rem' }} />
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem' }}>
-                  <Skeleton height={45} width={130} style={{ borderRadius: '8px' }} />
-                  <Skeleton height={45} width={130} style={{ borderRadius: '8px' }} />
-                  <Skeleton height={45} width={130} style={{ borderRadius: '8px' }} />
+                {/* Rainbow line at top */}
+                <div style={{ 
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  height: '6px',
+                  background: 'linear-gradient(to right, #3498db, #8e44ad, #e74c3c, #f1c40f, #2ecc71)'
+                }}></div>
+                
+                {/* Left-aligned title with underline */}
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
+                  <Skeleton height={28} width={180} style={{ marginBottom: '10px' }} />
+                  <div style={{ width: '60px', height: '3px', background: '#f39c12', borderRadius: '1.5px' }}></div>
+                </div>
+                
+                {/* Info Grid */}
+                <div style={{ 
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+                  gap: '1.5rem',
+                  marginBottom: '2rem',
+                  padding: '1.5rem',
+                  backgroundColor: '#f8f9fa',
+                  borderRadius: '12px',
+                  textAlign: 'left'
+                }}>
+                  {Array(6).fill(0).map((_, index) => (
+                    <div key={index} style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                      <Skeleton height={16} width={70} />
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <Skeleton circle height={16} width={16} />
+                        <Skeleton height={20} width={100} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                
+                {/* Highlight badges */}
+                <div style={{ 
+                  display: 'flex', 
+                  justifyContent: 'flex-start',
+                  flexWrap: 'wrap', 
+                  gap: '1.5rem',
+                  marginTop: '1.5rem'
+                }}>
+                  {[1, 2, 3].map((_, index) => (
+                    <div key={index} style={{ 
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      padding: '1rem 1.8rem',
+                      borderRadius: '50px',
+                      background: index === 0 ? 'linear-gradient(135deg, #3498db, #2980b9)' :
+                                index === 1 ? 'linear-gradient(135deg, #e74c3c, #c0392b)' :
+                                'linear-gradient(135deg, #27ae60, #2ecc71)',
+                      boxShadow: '0 8px 20px rgba(0, 0, 0, 0.15)'
+                    }}>
+                      <div style={{ 
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: '40px',
+                        height: '40px',
+                        borderRadius: '50%',
+                        background: 'rgba(255, 255, 255, 0.25)',
+                        marginRight: '0.75rem'
+                      }}>
+                        <Skeleton circle height={18} width={18} baseColor="rgba(255, 255, 255, 0.5)" highlightColor="rgba(255, 255, 255, 0.8)" />
+                      </div>
+                      <Skeleton height={22} width={80} baseColor="rgba(255, 255, 255, 0.5)" highlightColor="rgba(255, 255, 255, 0.8)" />
+                    </div>
+                  ))}
                 </div>
               </div>
-              
-              {/* Description Section */}
-              <div style={{ marginBottom: '2rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
-                  <Skeleton circle height={24} width={24} />
-                  <Skeleton height={30} width={180} />
-                </div>
-                <Skeleton height={18} style={{ marginBottom: '0.8rem' }} count={3} />
-                <Skeleton height={18} width="65%" style={{ marginBottom: '0.8rem' }} />
-                <Skeleton height={18} style={{ marginBottom: '0.8rem' }} count={2} />
-                <Skeleton height={18} width="45%" />
-              </div>
-              
-              {/* Requirements Tab */}
+
+              {/* Tabs Section */}
               <div style={{ marginBottom: '2rem' }}>
                 <div style={{ 
                   display: 'flex', 
@@ -557,35 +610,59 @@ export const ProgramDetailsSkeleton: React.FC = () => {
             <Skeleton height={16} count={2} style={{ marginBottom: '0.5rem' }} />
           </div>
           
-          {/* Key Information Card */}
+          {/* Institution Card */}
+          <div style={{ 
+            backgroundColor: 'white', 
+            borderRadius: '12px', 
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
+            padding: '1.5rem',
+            marginBottom: '2rem'
+          }}>
+            <Skeleton height={24} width="80%" style={{ marginBottom: '1.5rem' }} />
+            <div style={{ 
+              display: 'flex',
+              alignItems: 'center',
+              gap: '1rem',
+              padding: '1.25rem',
+              backgroundColor: '#f8f9fa',
+              borderRadius: '8px',
+              marginBottom: '1.5rem'
+            }}>
+              <Skeleton height={64} width={64} style={{ borderRadius: '8px' }} />
+              <div>
+                <Skeleton height={20} width={120} style={{ marginBottom: '0.25rem' }} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <Skeleton circle height={14} width={14} />
+                  <Skeleton height={16} width={100} />
+                </div>
+              </div>
+            </div>
+            <Skeleton height={45} style={{ borderRadius: '6px' }} />
+          </div>
+          
+          {/* Video Section */}
           <div style={{ 
             backgroundColor: 'white', 
             borderRadius: '12px', 
             boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
             padding: '1.5rem'
           }}>
-            <Skeleton height={24} width="80%" style={{ marginBottom: '1.5rem' }} />
-            <div style={{ marginBottom: '1.5rem' }}>
-              <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', alignItems: 'center' }}>
-                <Skeleton circle height={20} width={20} />
-                <Skeleton height={18} width="80%" />
-              </div>
-              <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', alignItems: 'center' }}>
-                <Skeleton circle height={20} width={20} />
-                <Skeleton height={18} width="80%" />
-              </div>
-              <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', alignItems: 'center' }}>
-                <Skeleton circle height={20} width={20} />
-                <Skeleton height={18} width="80%" />
-              </div>
-              <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', alignItems: 'center' }}>
-                <Skeleton circle height={20} width={20} />
-                <Skeleton height={18} width="80%" />
-              </div>
-              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                <Skeleton circle height={20} width={20} />
-                <Skeleton height={18} width="80%" />
-              </div>
+            <Skeleton height={24} width="60%" style={{ marginBottom: '1.5rem' }} />
+            <div style={{ 
+              position: 'relative', 
+              width: '100%',
+              paddingBottom: '56.25%',
+              height: 0,
+              overflow: 'hidden',
+              borderRadius: '8px',
+              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+              marginBottom: '1rem'
+            }}>
+              <Skeleton height="100%" width="100%" style={{ 
+                position: 'absolute',
+                top: 0,
+                left: 0
+              }} />
             </div>
           </div>
         </div>
