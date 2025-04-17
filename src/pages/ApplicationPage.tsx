@@ -343,16 +343,27 @@ const ApplicationPage: React.FC = () => {
   // Load program data
   useEffect(() => {
     const loadProgram = async () => {
-      if (!programId) return;
+      console.log("ApplicationPage: Loading program with ID:", programId);
+      
+      if (!programId) {
+        console.error("ApplicationPage: No program ID provided");
+        setError("No program ID provided. Please select a program first.");
+        setIsLoading(false);
+        return;
+      }
       
       try {
         setIsLoading(true);
         setError(null);
         const id = parseInt(programId, 10);
         if (isNaN(id)) {
-          throw new Error('Invalid program ID');
+          console.error("ApplicationPage: Invalid program ID format:", programId);
+          throw new Error('Invalid program ID format');
         }
+        
+        console.log("ApplicationPage: Fetching program with ID:", id);
         const programData = await fetchProgramById(id);
+        console.log("ApplicationPage: Program data retrieved:", programData);
         setProgram(programData);
       } catch (err) {
         console.error('Failed to load program:', err);

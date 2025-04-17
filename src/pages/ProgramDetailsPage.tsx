@@ -1185,7 +1185,11 @@ const ProgramDetailsPage: React.FC = () => {
                 <RequirementText>May 15, 2025 for Fall admission</RequirementText>
               </div>
             </RequirementItem>
-            <ActionButton as={Link} to={`/apply/${program.id}`}>
+            <ActionButton 
+              as={Link} 
+              to={`/apply/${program.id}`}
+              onClick={() => console.log("Applying to program with ID:", program.id)}
+            >
               Apply Now
               <FontAwesomeIcon icon={faChevronRight} />
             </ActionButton>
