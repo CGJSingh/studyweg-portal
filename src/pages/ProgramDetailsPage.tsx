@@ -136,9 +136,15 @@ const CategoryLabel = styled.div`
 `;
 
 const ProgramTitle = styled.h1`
-  font-size: 2rem;
-  font-weight: 600;
+  font-size: 2.5rem;
+  font-weight: 700;
   margin-bottom: 1rem;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8), 0 0 5px rgba(0, 0, 0, 0.5);
+  line-height: 1.2;
+  color: #ffffff;
+  background: linear-gradient(rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.3));
+  padding: 10px 0;
+  border-radius: 4px;
 `;
 
 const SchoolName = styled.div`
@@ -172,39 +178,48 @@ const ContentSection = styled.div`
 `;
 
 const SectionTitle = styled.h2`
-  font-size: 1.5rem;
+  font-size: 1.6rem;
   color: #0c3b5e;
   margin: 0 0 1.5rem 0;
   padding-bottom: 0.75rem;
-  border-bottom: 1px solid #eee;
+  border-bottom: 2px solid #eee;
   display: flex;
   align-items: center;
   gap: 0.75rem;
   
   svg {
     color: #f39c12;
+    font-size: 1.4rem;
   }
 `;
 
 const InfoGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 1.5rem;
   margin-bottom: 2rem;
   padding: 1.5rem;
   background-color: #f8f9fa;
-  border-radius: 8px;
+  border-radius: 12px;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.04);
+  text-align: left;
 `;
 
 const InfoItem = styled.div`
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  transition: transform 0.3s ease;
+  
+  &:hover {
+    transform: translateY(-3px);
+  }
 `;
 
 const InfoLabel = styled.div`
   color: #7f8c8d;
-  font-size: 0.85rem;
+  font-size: 0.9rem;
+  font-weight: 500;
 `;
 
 const InfoValue = styled.div`
@@ -212,10 +227,12 @@ const InfoValue = styled.div`
   align-items: center;
   gap: 0.5rem;
   color: #0c3b5e;
-  font-weight: 500;
+  font-weight: 600;
+  font-size: 1.05rem;
   
   svg {
     color: #f39c12;
+    font-size: 1.1rem;
   }
 `;
 
@@ -446,15 +463,22 @@ const HighlightItem = styled.div`
 `;
 
 const ProgramSummary = styled.div`
-  padding: 1.5rem;
-  background-color: #f8f9fa;
-  border-radius: 8px;
-  margin-bottom: 1.5rem;
+  padding: 2rem;
+  background: white;
+  border-radius: 12px;
+  margin-bottom: 2rem;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+  border-left: 5px solid #0c3b5e;
   
   p {
-    color: #34495e;
-    line-height: 1.6;
+    color: #2c3e50;
+    line-height: 1.8;
     margin: 0;
+    font-size: 1.05rem;
+  }
+  
+  strong {
+    color: #0c3b5e;
   }
 `;
 
@@ -617,13 +641,14 @@ const CategoryBadge = styled.div<{ gradient: string }>`
 
 // Update component name and purpose
 const ProgramDetailsHighlight = styled.div`
-  text-align: center;
-  margin: 0 0 2rem 0;
-  padding: 1.5rem;
-  background-color: #f8f9fa;
-  border-radius: 12px;
+  margin: 0 0.5rem 2rem 0.5rem;
+  padding: 2rem;
+  background: linear-gradient(135deg, #f8f9fb, #e6eef7);
+  border-radius: 16px;
   position: relative;
   overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
+  text-align: left;
   
   &::before {
     content: '';
@@ -631,42 +656,58 @@ const ProgramDetailsHighlight = styled.div`
     top: 0;
     left: 0;
     width: 100%;
-    height: 4px;
+    height: 6px;
     background: linear-gradient(to right, #3498db, #8e44ad, #e74c3c, #f1c40f, #2ecc71);
   }
 `;
 
 const HighlightTitle = styled.h3`
-  font-size: 1.2rem;
-  margin: 0 0 1rem 0;
-  color: #34495e;
-  font-weight: 600;
+  font-size: 1.4rem;
+  margin: 0 0 1.5rem 0;
+  color: #0c3b5e;
+  font-weight: 700;
   letter-spacing: 0.5px;
   text-transform: uppercase;
+  position: relative;
+  display: inline-block;
+  padding-bottom: 10px;
+  text-align: left;
+  
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 60px;
+    height: 3px;
+    background: #f39c12;
+    border-radius: 1.5px;
+  }
 `;
 
 const HighlightBadgeContainer = styled.div`
   display: flex;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 1.5rem;
   flex-wrap: wrap;
+  margin-top: 1.5rem;
 `;
 
 const HighlightBadge = styled.div<{ gradient: string }>`
   display: inline-flex;
   align-items: center;
-  padding: 0.7rem 1.5rem;
+  padding: 1rem 1.8rem;
   border-radius: 50px;
   background: ${props => props.gradient};
   color: white;
   font-weight: 600;
   font-size: 1.1rem;
-  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
   transition: all 0.3s ease;
   
   &:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+    transform: translateY(-5px);
+    box-shadow: 0 12px 25px rgba(0, 0, 0, 0.2);
   }
 `;
 
@@ -674,29 +715,29 @@ const HighlightIcon = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   background-color: rgba(255, 255, 255, 0.25);
   margin-right: 0.75rem;
   
   svg {
     color: white;
-    font-size: 1rem;
+    font-size: 1.1rem;
   }
 `;
 
 // Function to get gradient colors for different detail types
 const getDetailGradient = (type: string) => {
   switch (type) {
-    case 'Technology':
-      return 'linear-gradient(135deg, #0c3b5e, #1a5486)';
-    case 'Business':
-      return 'linear-gradient(135deg, #0c3b5e, #f39c12)';
-    case 'Healthcare':
-      return 'linear-gradient(135deg, #0c3b5e, #1a5486)';
+    case 'country':
+      return 'linear-gradient(135deg, #3498db, #2980b9)';
+    case 'duration':
+      return 'linear-gradient(135deg, #e74c3c, #c0392b)';
+    case 'level':
+      return 'linear-gradient(135deg, #27ae60, #2ecc71)';
     default:
-      return 'linear-gradient(135deg, #0c3b5e, #1a5486)';
+      return 'linear-gradient(135deg, #3498db, #2980b9)';
   }
 };
 
@@ -945,141 +986,100 @@ const ProgramDetailsPage: React.FC = () => {
             </ProgramHeader>
             
             <ContentSection>
-              <SectionTitle>
-                <FontAwesomeIcon icon={faInfoCircle} />
-                Program Overview
-              </SectionTitle>
-              
-              <ProgramSummary>
-                <div dangerouslySetInnerHTML={{ __html: program.short_description }} />
-              </ProgramSummary>
-              
-              {/* Add beautiful program details highlight */}
-              <ProgramDetailsHighlight>
-                <HighlightTitle>Program Details</HighlightTitle>
-                <HighlightBadgeContainer>
-                  {country && (
-                    <HighlightBadge gradient={getDetailGradient('country')}>
-                      <HighlightIcon>
-                        <FontAwesomeIcon icon={faMapMarkerAlt} />
-                      </HighlightIcon>
-                      {country}
-                    </HighlightBadge>
-                  )}
-                  
-                  {duration && (
-                    <HighlightBadge gradient={getDetailGradient('duration')}>
-                      <HighlightIcon>
-                        <FontAwesomeIcon icon={faClock} />
-                      </HighlightIcon>
-                      {duration}
-                    </HighlightBadge>
-                  )}
-                  
-                  {programLevel && (
-                    <HighlightBadge gradient={getDetailGradient('level')}>
-                      <HighlightIcon>
+              {/* Program Overview Section - Renamed from Program Details */}
+              {(country || duration || programLevel) && (
+                <ProgramDetailsHighlight>
+                  <HighlightTitle>Program Overview</HighlightTitle>
+                  <InfoGrid>
+                    <InfoItem>
+                      <InfoLabel>Program Level</InfoLabel>
+                      <InfoValue>
                         <FontAwesomeIcon icon={faGraduationCap} />
-                      </HighlightIcon>
-                      {programLevel}
-                    </HighlightBadge>
-                  )}
-                </HighlightBadgeContainer>
-              </ProgramDetailsHighlight>
-              
-              <InfoGrid>
-                <InfoItem>
-                  <InfoLabel>Program Level</InfoLabel>
-                  <InfoValue>
-                    <FontAwesomeIcon icon={faGraduationCap} />
-                    {programLevel || 'Not specified'}
-                  </InfoValue>
-                </InfoItem>
-                <InfoItem>
-                  <InfoLabel>Institution</InfoLabel>
-                  <InfoValue>
-                    <FontAwesomeIcon icon={faUniversity} />
-                    {school || 'Not specified'}
-                  </InfoValue>
-                </InfoItem>
-                <InfoItem>
-                  <InfoLabel>Location</InfoLabel>
-                  <InfoValue>
-                    <FontAwesomeIcon icon={faMapMarkerAlt} />
-                    {country || 'Not specified'}
-                  </InfoValue>
-                </InfoItem>
-                <InfoItem>
-                  <InfoLabel>Duration</InfoLabel>
-                  <InfoValue>
-                    <FontAwesomeIcon icon={faClock} />
-                    {duration || 'Not specified'}
-                  </InfoValue>
-                </InfoItem>
-                <InfoItem>
-                  <InfoLabel>Category</InfoLabel>
-                  <InfoValue>
-                    <FontAwesomeIcon icon={faTag} />
-                    {category}
-                  </InfoValue>
-                </InfoItem>
-                {tuitionFee && (
-                  <InfoItem>
-                    <InfoLabel>Tuition Fee</InfoLabel>
-                    <InfoValue>
-                      <FontAwesomeIcon icon={faMoneyBill} />
-                      ${typeof tuitionFee === 'number' ? tuitionFee.toLocaleString() : tuitionFee}
-                    </InfoValue>
-                  </InfoItem>
-                )}
-                {applicationFee && (
-                  <InfoItem>
-                    <InfoLabel>Application Fee</InfoLabel>
-                    <InfoValue>
-                      <FontAwesomeIcon icon={faMoneyBill} />
-                      ${applicationFee}
-                    </InfoValue>
-                  </InfoItem>
-                )}
-              </InfoGrid>
+                        {programLevel || 'Not specified'}
+                      </InfoValue>
+                    </InfoItem>
+                    <InfoItem>
+                      <InfoLabel>Institution</InfoLabel>
+                      <InfoValue>
+                        <FontAwesomeIcon icon={faUniversity} />
+                        {school || 'Not specified'}
+                      </InfoValue>
+                    </InfoItem>
+                    <InfoItem>
+                      <InfoLabel>Location</InfoLabel>
+                      <InfoValue>
+                        <FontAwesomeIcon icon={faMapMarkerAlt} />
+                        {country || 'Not specified'}
+                      </InfoValue>
+                    </InfoItem>
+                    <InfoItem>
+                      <InfoLabel>Duration</InfoLabel>
+                      <InfoValue>
+                        <FontAwesomeIcon icon={faClock} />
+                        {duration || 'Not specified'}
+                      </InfoValue>
+                    </InfoItem>
+                    {category && (
+                      <InfoItem>
+                        <InfoLabel>Category</InfoLabel>
+                        <InfoValue>
+                          <FontAwesomeIcon icon={faTag} />
+                          {category}
+                        </InfoValue>
+                      </InfoItem>
+                    )}
+                    {tuitionFee && (
+                      <InfoItem>
+                        <InfoLabel>Tuition Fee</InfoLabel>
+                        <InfoValue>
+                          <FontAwesomeIcon icon={faMoneyBill} />
+                          ${typeof tuitionFee === 'number' ? tuitionFee.toLocaleString() : tuitionFee}
+                        </InfoValue>
+                      </InfoItem>
+                    )}
+                    {applicationFee && (
+                      <InfoItem>
+                        <InfoLabel>Application Fee</InfoLabel>
+                        <InfoValue>
+                          <FontAwesomeIcon icon={faMoneyBill} />
+                          ${applicationFee}
+                        </InfoValue>
+                      </InfoItem>
+                    )}
+                  </InfoGrid>
+                  
+                  <HighlightBadgeContainer>
+                    {country && (
+                      <HighlightBadge gradient={getDetailGradient('country')}>
+                        <HighlightIcon>
+                          <FontAwesomeIcon icon={faMapMarkerAlt} />
+                        </HighlightIcon>
+                        {country}
+                      </HighlightBadge>
+                    )}
+                    
+                    {duration && (
+                      <HighlightBadge gradient={getDetailGradient('duration')}>
+                        <HighlightIcon>
+                          <FontAwesomeIcon icon={faClock} />
+                        </HighlightIcon>
+                        {duration}
+                      </HighlightBadge>
+                    )}
+                    
+                    {programLevel && (
+                      <HighlightBadge gradient={getDetailGradient('level')}>
+                        <HighlightIcon>
+                          <FontAwesomeIcon icon={faGraduationCap} />
+                        </HighlightIcon>
+                        {programLevel}
+                      </HighlightBadge>
+                    )}
+                  </HighlightBadgeContainer>
+                </ProgramDetailsHighlight>
+              )}
             </ContentSection>
           </ContentCard>
-
-          {/* Add Video Section after the first ContentCard */}
-          {videoUrls.length > 0 && (
-            <ContentCard>
-              <ContentSection>
-                <SectionTitle>
-                  <FontAwesomeIcon icon={faVideo} />
-                  Program Videos
-                </SectionTitle>
-                
-                {videoUrls.length === 1 ? (
-                  <VideoContainer>
-                    <VideoIframe 
-                      src={getEmbedUrl(videoUrls[0])}
-                      title="Program Video"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      allowFullScreen
-                    />
-                  </VideoContainer>
-                ) : (
-                  <VideoGrid>
-                    {videoUrls.map((url, index) => (
-                      <VideoContainer key={index}>
-                        <VideoIframe 
-                          src={getEmbedUrl(url)}
-                          title={`Program Video ${index + 1}`}
-                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                          allowFullScreen
-                        />
-                      </VideoContainer>
-                    ))}
-                  </VideoGrid>
-                )}
-              </ContentSection>
-            </ContentCard>
-          )}
 
           <ContentCard>
             <ContentSection>
@@ -1225,6 +1225,27 @@ const ProgramDetailsPage: React.FC = () => {
                 <FontAwesomeIcon icon={faInfoCircle} />
                 Learn more about this institution
               </SecondaryButton>
+            </SidebarCard>
+          )}
+          
+          {/* Video Section */}
+          {videoUrls.length > 0 && (
+            <SidebarCard>
+              <SidebarTitle>
+                <FontAwesomeIcon icon={faVideo} />
+                Program Videos
+              </SidebarTitle>
+              
+              {videoUrls.map((url, index) => (
+                <VideoContainer key={index} style={{marginBottom: '1rem'}}>
+                  <VideoIframe 
+                    src={getEmbedUrl(url)}
+                    title={`Program Video ${index + 1}`}
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  />
+                </VideoContainer>
+              ))}
             </SidebarCard>
           )}
         </Sidebar>
