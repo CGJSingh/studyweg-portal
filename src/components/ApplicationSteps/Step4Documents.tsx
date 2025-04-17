@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import styled from 'styled-components';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
@@ -167,136 +167,6 @@ const HiddenInput = styled.input`
   display: none;
 `;
 
-const FileList = styled.div`
-  margin-top: 1.5rem;
-`;
-
-const FileItem = styled.div`
-  display: flex;
-  align-items: center;
-  padding: 0.75rem 1rem;
-  background-color: #e8f4fc;
-  border-radius: 4px;
-  margin-bottom: 0.5rem;
-  
-  &:last-child {
-    margin-bottom: 0;
-  }
-`;
-
-const FileIcon = styled.div`
-  font-size: 1.25rem;
-  color: #0c3b5e;
-  margin-right: 1rem;
-`;
-
-const FileDetails = styled.div`
-  flex: 1;
-`;
-
-const FileName = styled.div`
-  font-size: 0.9rem;
-  font-weight: 500;
-  margin-bottom: 0.25rem;
-  color: #333;
-`;
-
-const FileSize = styled.div`
-  font-size: 0.8rem;
-  color: #666;
-`;
-
-const FileActions = styled.div`
-  display: flex;
-  gap: 0.5rem;
-`;
-
-const ActionButton = styled.button`
-  background: none;
-  border: none;
-  color: #666;
-  cursor: pointer;
-  padding: 0.25rem;
-  border-radius: 4px;
-  transition: all 0.2s;
-  
-  &:hover {
-    color: #e74c3c;
-    background-color: rgba(0, 0, 0, 0.05);
-  }
-  
-  svg {
-    font-size: 1rem;
-  }
-`;
-
-const SuccessIcon = styled.div`
-  color: #2ecc71;
-  margin-left: auto;
-`;
-
-const ErrorMessage = styled.div`
-  color: #e74c3c;
-  font-size: 0.9rem;
-  margin-top: 0.5rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-`;
-
-const InfoBox = styled.div`
-  background-color: #f8f9fa;
-  border-left: 4px solid #f39c12;
-  padding: 1rem;
-  margin-bottom: 2rem;
-  border-radius: 4px;
-  
-  p {
-    margin: 0;
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    color: #555;
-    font-size: 0.95rem;
-    
-    svg {
-      color: #f39c12;
-      font-size: 1.25rem;
-    }
-  }
-`;
-
-const ValidationSummary = styled.div`
-  background-color: #fdeaea;
-  border-left: 4px solid #e74c3c;
-  padding: 1rem;
-  margin: 1rem 0 2rem;
-  border-radius: 4px;
-  
-  h4 {
-    color: #e74c3c;
-    margin-top: 0;
-    margin-bottom: 0.5rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    
-    svg {
-      font-size: 1rem;
-    }
-  }
-  
-  ul {
-    margin: 0;
-    padding-left: 1.5rem;
-    
-    li {
-      margin-bottom: 0.25rem;
-      font-size: 0.9rem;
-    }
-  }
-`;
-
 const FilePreview = styled.div`
   width: 100%;
   height: 100%;
@@ -449,6 +319,68 @@ const AddMoreButton = styled.button`
   }
 `;
 
+const ErrorMessage = styled.div`
+  color: #e74c3c;
+  font-size: 0.9rem;
+  margin-top: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+`;
+
+const InfoBox = styled.div`
+  background-color: #f8f9fa;
+  border-left: 4px solid #f39c12;
+  padding: 1rem;
+  margin-bottom: 2rem;
+  border-radius: 4px;
+  
+  p {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: #555;
+    font-size: 0.95rem;
+    
+    svg {
+      color: #f39c12;
+      font-size: 1.25rem;
+    }
+  }
+`;
+
+const ValidationSummary = styled.div`
+  background-color: #fdeaea;
+  border-left: 4px solid #e74c3c;
+  padding: 1rem;
+  margin: 1rem 0 2rem;
+  border-radius: 4px;
+  
+  h4 {
+    color: #e74c3c;
+    margin-top: 0;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    
+    svg {
+      font-size: 1rem;
+    }
+  }
+  
+  ul {
+    margin: 0;
+    padding-left: 1.5rem;
+    
+    li {
+      margin-bottom: 0.25rem;
+      font-size: 0.9rem;
+    }
+  }
+`;
+
 interface FileInfo {
   file: File;
   preview?: string;
@@ -531,8 +463,8 @@ const Step4Documents: React.FC<Step4DocumentsProps> = ({ formData, updateFormDat
   
   const [errors, setErrors] = useState<Record<string, string>>({});
   
-  // Update validateDocuments to return both validity and error messages
-  const validateDocuments = () => {
+  // Memoize validateDocuments function to avoid dependency issues
+  const validateDocuments = useCallback(() => {
     const errors: Record<string, string> = {};
     let isValid = true;
 
@@ -548,7 +480,7 @@ const Step4Documents: React.FC<Step4DocumentsProps> = ({ formData, updateFormDat
     
     setErrors(errors);
     return isValid;
-  };
+  }, [documentTypes, documents]);
   
   // Update handleFileUpload to validate after upload and handle file size limits
   const handleFileUpload = (type: string, e: React.ChangeEvent<HTMLInputElement>) => {
@@ -728,7 +660,7 @@ const Step4Documents: React.FC<Step4DocumentsProps> = ({ formData, updateFormDat
       documents: documents
     });
     
-  }, [documents]);
+  }, [documents, updateFormData, validateDocuments]);
   
   // Load document types based on formData when component mounts
   useEffect(() => {
@@ -853,7 +785,7 @@ const Step4Documents: React.FC<Step4DocumentsProps> = ({ formData, updateFormDat
       validateDocuments();
     }, 0);
     
-  }, [formData]);
+  }, [formData, validateDocuments]);
 
   return (
     <StepContainer>

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faChevronRight, faChevronLeft, faCheck, faExclamationTriangle, faSpinner } from '@fortawesome/free-solid-svg-icons';
+import { faChevronRight, faChevronLeft, faCheck, faExclamationTriangle } from '@fortawesome/free-solid-svg-icons';
 import { motion } from 'framer-motion';
 
 import { Program } from '../types';
@@ -253,7 +253,6 @@ interface FormData {
 const ApplicationPage: React.FC = () => {
   const { programId } = useParams();
   const navigate = useNavigate();
-  const location = useLocation();
   
   const [currentStep, setCurrentStep] = useState(1);
   const [program, setProgram] = useState<Program | null>(null);
@@ -473,6 +472,7 @@ const ApplicationPage: React.FC = () => {
   };
   
   // Handle form data changes
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const updateFormData = (step: string, data: any) => {
     setFormData(prev => {
       const currentStepData = prev[step as keyof FormData];
