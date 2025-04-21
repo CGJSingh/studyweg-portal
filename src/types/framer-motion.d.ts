@@ -47,4 +47,15 @@ declare module 'framer-motion' {
     img: MotionComponent<React.ImgHTMLAttributes<HTMLImageElement>>;
     // Add any other HTML elements you use with motion
   };
+  
+  export interface AnimatePresenceProps {
+    children?: React.ReactNode;
+    custom?: any;
+    initial?: boolean;
+    exitBeforeEnter?: boolean;
+    onExitComplete?: () => void;
+    [key: string]: any;
+  }
+  
+  export const AnimatePresence: React.FC<AnimatePresenceProps>;
 } 
