@@ -241,30 +241,16 @@ const UserMenuDivider = styled.div`
   margin: 0.5rem 0;
 `;
 
-const DemoToggle = styled.button`
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  background-color: #0c3b5e;
-  color: white;
-  border: none;
-  border-radius: 5px;
-  padding: 0.5rem 1rem;
-  font-size: 0.9rem;
-  cursor: pointer;
-  z-index: 1000;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  
-  &:hover {
-    background-color: #092b47;
-  }
-`;
+// Add interface for Navbar props
+interface NavbarProps {
+  isLoggedIn: boolean;
+  setIsLoggedIn: React.Dispatch<React.SetStateAction<boolean>>;
+}
 
-const Navbar: React.FC = () => {
+const Navbar: React.FC<NavbarProps> = ({ isLoggedIn, setIsLoggedIn }) => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false); // In a real app, this would come from your auth state
   const location = useLocation();
   
   useEffect(() => {
@@ -379,11 +365,6 @@ const Navbar: React.FC = () => {
       </NavbarContainer>
       
       <Overlay isOpen={isMenuOpen} onClick={toggleMenu} />
-      
-      {/* Demo toggle button */}
-      <DemoToggle onClick={() => setIsLoggedIn(!isLoggedIn)}>
-        {isLoggedIn ? 'Switch to Logged Out' : 'Switch to Logged In'}
-      </DemoToggle>
     </>
   );
 };

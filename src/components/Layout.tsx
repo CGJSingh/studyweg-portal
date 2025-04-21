@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import styled from 'styled-components';
 import Navbar from './Navbar';
 import Footer from './Footer';
+import DevToolbar from './DevToolbar';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -12,11 +13,17 @@ const Main = styled.main`
 `;
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  
   return (
     <>
-      <Navbar />
+      <Navbar isLoggedIn={isLoggedIn} setIsLoggedIn={setIsLoggedIn} />
       <Main>{children}</Main>
       <Footer />
+      <DevToolbar 
+        isLoggedIn={isLoggedIn} 
+        onToggleLogin={setIsLoggedIn} 
+      />
     </>
   );
 };
