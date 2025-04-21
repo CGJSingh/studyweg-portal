@@ -749,7 +749,7 @@ const FilterSelect = styled.select`
 type ProgramType = 'bachelors' | 'diploma' | 'masters' | 'phd' | 'certificate';
 
 // Define tab types
-type TabType = 'all' | 'top' | 'fast' | 'intake';
+type TabType = 'all';
 
 // Define sort options
 type SortOption = 'default' | 'name-asc' | 'name-desc' | 'level-asc' | 'level-desc' | 'fee-asc' | 'fee-desc' | 'rating-asc' | 'rating-desc';
@@ -1214,12 +1214,6 @@ const ProgramsPage: React.FC = () => {
         extraParams['search'] = searchQuery;
       }
       
-      // Add tab filter if needed
-      if (activeTab !== 'all') {
-        extraParams['filter[tag]'] = activeTab === 'top' ? 'top program' : 
-                                   activeTab === 'fast' ? 'fast acceptance' : 'intake offer';
-      }
-
       // Override default sorting if a different sort option is selected
       if (sortOption !== 'default' && sortOption !== 'name-asc') {
         const [field, direction] = sortOption.split('-');
@@ -1361,7 +1355,8 @@ const ProgramsPage: React.FC = () => {
       );
     }
     
-    // Apply tab filter
+    // Apply tab filter - REMOVED since we only have 'all' tab now
+    /*
     if (activeTab === 'top') {
       filtered = filtered.filter(program => 
         program.tags.some(tag => tag.name.toLowerCase() === 'top program')
@@ -1375,6 +1370,7 @@ const ProgramsPage: React.FC = () => {
         program.tags.some(tag => tag.name.toLowerCase() === 'intake offer')
       );
     }
+    */
     
     // Apply program type filters
     const activeTypes = Object.entries(programTypes)
@@ -1589,17 +1585,8 @@ const ProgramsPage: React.FC = () => {
           handleFilterChange(filterType as keyof typeof filters, value);
           console.log('Filter applied successfully');
         } else if (filterType === 'tag') {
-          // Handle tag filtering by setting the appropriate tab
-          if (value.toLowerCase() === 'top program') {
-            setActiveTab('top');
-          } else if (value.toLowerCase() === 'fast acceptance') {
-            setActiveTab('fast');
-          } else if (value.toLowerCase() === 'intake offer') {
-            setActiveTab('intake');
-          } else {
-            // For other tags, set a search query
-            setSearchQuery(value);
-          }
+          // Handle tag filtering through search query instead of tabs
+          setSearchQuery(value);
           console.log('Tag filtering applied successfully');
         }
         
@@ -2484,24 +2471,6 @@ const ProgramsPage: React.FC = () => {
           onClick={() => handleTabChange('all')}
         >
           All Programs
-        </Tab>
-        <Tab 
-          active={activeTab === 'top'} 
-          onClick={() => handleTabChange('top')}
-        >
-          Top Programs
-        </Tab>
-        <Tab 
-          active={activeTab === 'fast'} 
-          onClick={() => handleTabChange('fast')}
-        >
-          Fast Acceptance
-        </Tab>
-        <Tab 
-          active={activeTab === 'intake'} 
-          onClick={() => handleTabChange('intake')}
-        >
-          Intake Offer
         </Tab>
       </TabsContainer>
       
