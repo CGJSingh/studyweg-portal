@@ -185,7 +185,12 @@ const ErrorMessage = styled.span`
 `;
 
 interface Step1WelcomeProps {
-  formData: any;
+  formData: {
+    applicantType?: string;
+    agentId?: string;
+    ambassadorId?: string;
+    validationErrors?: { [key: string]: string };
+  };
   updateFormData: (data: any) => void;
   onNext: () => void;
 }
@@ -196,7 +201,18 @@ const Step1Welcome: React.FC<Step1WelcomeProps> = ({ formData, updateFormData, o
   // Debug render
   useEffect(() => {
     console.log("Step1Welcome rendered with formData:", formData);
-  }, [formData]);
+    
+    // If there are validation errors from the parent component, use them
+    if (formData.validationErrors) {
+      setErrors({...formData.validationErrors});
+      
+      // Clear the validation errors in the parent component to avoid showing them repeatedly
+      updateFormData({
+        ...formData,
+        validationErrors: {}
+      });
+    }
+  }, [formData, updateFormData]);
 
   const validateForm = () => {
     const newErrors: { [key: string]: string } = {};

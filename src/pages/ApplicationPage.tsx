@@ -636,6 +636,7 @@ interface FormData {
   applicantType?: string;
   agentId?: string;
   ambassadorId?: string;
+  validationErrors?: Record<string, string>;
 }
 
 const ApplicationPage: React.FC = () => {
@@ -722,7 +723,8 @@ const ApplicationPage: React.FC = () => {
     agentId: '',
     ambassadorId: '',
     documentsValid: false,
-    isPersonalInfoValid: false
+    isPersonalInfoValid: false,
+    validationErrors: {}
   });
 
   // Debug formData changes
@@ -813,31 +815,57 @@ const ApplicationPage: React.FC = () => {
       // For Step 1, validate applicant type and ID
       console.log("Checking applicant type:", formData.applicantType);
       
+      let hasError = false;
+      const updatedFormData = { ...formData };
+      
+      // Instead of alerts, set validation flags in the form data
       if (!formData.applicantType) {
         console.log("Error: No applicant type selected");
-        alert('Please select who is submitting the application');
-        return;
-      }
-      
-      if (formData.applicantType === 'Agent' && !formData.agentId) {
+        updatedFormData.validationErrors = {
+          ...updatedFormData.validationErrors,
+          applicantType: 'Please select who is submitting the application'
+        };
+        hasError = true;
+        
+        // Scroll to applicant type section
+        document.querySelector('.applicant-type-section')?.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'center' 
+        });
+      } else if (formData.applicantType === 'Agent' && !formData.agentId) {
         console.log("Error: Agent selected but no Agent ID provided");
-        alert('Please enter your agent ID');
-        return;
+        updatedFormData.validationErrors = {
+          ...updatedFormData.validationErrors,
+          agentId: 'Please enter your agent ID'
+        };
+        hasError = true;
+        
+        // Focus on agent ID input
+        document.getElementById('agentId')?.focus();
+      } else if (formData.applicantType === 'Ambassador' && !formData.ambassadorId) {
+        console.log("Error: Ambassador selected but no Ambassador ID provided");
+        updatedFormData.validationErrors = {
+          ...updatedFormData.validationErrors,
+          ambassadorId: 'Please enter your ambassador ID'
+        };
+        hasError = true;
+        
+        // Focus on ambassador ID input
+        document.getElementById('ambassadorId')?.focus();
       }
       
-      if (formData.applicantType === 'Ambassador' && !formData.ambassadorId) {
-        console.log("Error: Ambassador selected but no Ambassador ID provided");
-        alert('Please enter your ambassador ID');
+      if (hasError) {
+        // Update form data with validation errors
+        setFormData(updatedFormData);
         return;
       }
       
       console.log("Step 1 validation passed, proceeding to step 2");
       // Force update form data before proceeding
-      const updatedFormData = {
-        ...formData,
-        applicantType: formData.applicantType,  // Ensure this is set correctly
-        isPersonalInfoValid: false
-      };
+      updatedFormData.applicantType = formData.applicantType;  // Ensure this is set correctly
+      updatedFormData.isPersonalInfoValid = false;
+      updatedFormData.validationErrors = {}; // Clear any validation errors
+      
       console.log("Setting updated form data:", JSON.stringify(updatedFormData, null, 2));
       setFormData(updatedFormData);
       
@@ -1077,6 +1105,10 @@ const ApplicationPage: React.FC = () => {
     
     // First step has no back button
     if (currentStep === 1) {
+      // Check if there are validation errors
+      const hasValidationErrors = formData.validationErrors && 
+        Object.keys(formData.validationErrors).length > 0;
+                               
       return (
         <>
           <div></div> {/* Empty div for spacing */}
@@ -1098,7 +1130,7 @@ const ApplicationPage: React.FC = () => {
               boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)'
             }}
           >
-            Continue <FontAwesomeIcon icon={faChevronRight} />
+            {hasValidationErrors ? 'Please fix the errors' : 'Continue'} <FontAwesomeIcon icon={faChevronRight} />
           </Button>
         </>
       );
