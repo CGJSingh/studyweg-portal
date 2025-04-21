@@ -367,26 +367,6 @@ const Step5Payment: React.FC<Step5PaymentProps> = ({ formData, program, updateFo
             </SelectedIndicator>
           )}
         </PaymentMethodCard>
-        
-        <PaymentMethodCard 
-          selected={formData.paymentMethod === 'cash'} 
-          onClick={() => handlePaymentMethodSelect('cash')}
-        >
-          <PaymentMethodHeader>
-            <PaymentMethodIcon>
-              <FontAwesomeIcon icon={faMoneyBillWave} />
-            </PaymentMethodIcon>
-            <div>
-              <PaymentMethodTitle>Cash at Office</PaymentMethodTitle>
-              <PaymentMethodDescription>Pay in-person at one of our offices</PaymentMethodDescription>
-            </div>
-          </PaymentMethodHeader>
-          {formData.paymentMethod === 'cash' && (
-            <SelectedIndicator>
-              <FontAwesomeIcon icon={faCheckCircle} />
-            </SelectedIndicator>
-          )}
-        </PaymentMethodCard>
       </PaymentMethodsContainer>
       
       {formData.paymentMethod === 'bank-transfer' && (
@@ -394,15 +374,6 @@ const Step5Payment: React.FC<Step5PaymentProps> = ({ formData, program, updateFo
           <p>
             <FontAwesomeIcon icon={faExclamationTriangle} />
             <span>After submitting your application, you will receive bank details for transferring the application fee.</span>
-          </p>
-        </InfoBox>
-      )}
-      
-      {formData.paymentMethod === 'cash' && (
-        <InfoBox>
-          <p>
-            <FontAwesomeIcon icon={faExclamationTriangle} />
-            <span>Your application will be held for 7 days pending payment at one of our offices. Please bring your application reference number.</span>
           </p>
         </InfoBox>
       )}
