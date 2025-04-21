@@ -406,24 +406,22 @@ export const ProgramsListSkeleton: React.FC = () => {
         </div>
       </div>
       
-      {/* TabsContainer - exactly as in the real page */}
+      {/* TabsContainer - updated to only show 'All Programs' tab */}
       <div style={{ 
         display: 'flex', 
         borderBottom: '2px solid #eee', 
         marginBottom: '2rem' 
       }}>
-        {['All Programs', 'Top Programs', 'Fast Acceptance', 'Intake Offer'].map((tab, index) => (
-          <div key={index} style={{ 
-            padding: '0.75rem 1.25rem', 
-            fontWeight: 600, 
-            color: index === 0 ? '#f39c12' : '#666',
-            borderBottom: index === 0 ? '3px solid #f39c12' : 'none', 
-            marginBottom: '-2px',
-            cursor: 'pointer'
-          }}>
-            <Skeleton height={20} width={100 + (index * 15)} baseColor={index === 0 ? '#fff4e0' : '#f4f4f4'} highlightColor={index === 0 ? '#ffeacc' : '#e9e9e9'} />
-          </div>
-        ))}
+        <div style={{ 
+          padding: '0.75rem 1.25rem', 
+          fontWeight: 600, 
+          color: '#f39c12',
+          borderBottom: '3px solid #f39c12', 
+          marginBottom: '-2px',
+          cursor: 'pointer'
+        }}>
+          <Skeleton height={20} width={100} baseColor='#fff4e0' highlightColor='#ffeacc' />
+        </div>
       </div>
       
       {/* ResultSummary */}
