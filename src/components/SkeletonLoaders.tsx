@@ -333,154 +333,361 @@ export const ProfileSkeleton: React.FC = () => {
   );
 };
 
-// Programs List Page Skeleton - Enhanced version
+// Programs List Page Skeleton - Enhanced version that matches actual ProgramsPage
 export const ProgramsListSkeleton: React.FC = () => {
   return (
     <PageContainer>
-      {/* Header Bar with Title and User */}
+      {/* Offline Notice (similar to when in offline mode) */}
       <div style={{ 
-        background: '#0c3b5e', 
-        padding: '1rem 1.5rem', 
-        borderRadius: '8px', 
-        marginBottom: '2rem',
-        display: 'flex',
-        justifyContent: 'space-between',
+        backgroundColor: '#fcf8e3', 
+        border: '1px solid #faebcc', 
+        color: '#8a6d3b', 
+        padding: '0.75rem 1.25rem', 
+        borderRadius: '4px', 
+        display: 'flex', 
+        justifyContent: 'space-between', 
         alignItems: 'center',
-        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)'
+        marginBottom: '1rem'
       }}>
-        <Skeleton height={32} width={200} baseColor="#164a71" highlightColor="#205b86" />
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <Skeleton circle height={40} width={40} baseColor="#164a71" highlightColor="#205b86" />
-          <div>
-            <Skeleton height={16} width={120} baseColor="#164a71" highlightColor="#205b86" style={{ marginBottom: '6px' }} />
-            <Skeleton height={14} width={150} baseColor="#164a71" highlightColor="#205b86" />
+        <div>
+          <span style={{ fontWeight: 'bold', marginRight: '0.5rem' }}>
+            <Skeleton height={16} width={100} baseColor="#f5e7bc" highlightColor="#f8f0d8" />
+          </span>
+          <Skeleton height={16} width={300} baseColor="#f5e7bc" highlightColor="#f8f0d8" />
+        </div>
+        <Skeleton height={36} width={80} baseColor="#f5e7bc" highlightColor="#f8f0d8" style={{ borderRadius: '4px' }} />
+      </div>
+      
+      {/* SearchContainer - matches the structure in ProgramsPage */}
+      <div style={{ marginBottom: '2rem' }}>
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center', 
+          marginBottom: '1rem' 
+        }}>
+          {/* SearchInputWrapper */}
+          <div style={{ 
+            position: 'relative', 
+            flex: 1, 
+            maxWidth: '600px' 
+          }}>
+            {/* SearchIcon */}
+            <div style={{ 
+              position: 'absolute', 
+              left: '16px', 
+              top: '50%', 
+              transform: 'translateY(-50%)',
+              color: '#777' 
+            }}>
+              <Skeleton circle height={16} width={16} />
+            </div>
+            {/* SearchInput */}
+            <Skeleton height={48} style={{ 
+              borderRadius: '24px', 
+              paddingLeft: '2.8rem', 
+              border: '1px solid #ddd', 
+              boxShadow: '0 2px 6px rgba(0,0,0,0.05)'
+            }} />
+          </div>
+          
+          {/* SearchFilterButtons */}
+          <div style={{ display: 'flex', gap: '0.8rem' }}>
+            <Skeleton height={48} width={130} style={{ 
+              borderRadius: '24px', 
+              boxShadow: '0 2px 4px rgba(0,0,0,0.1)' 
+            }} />
+            <Skeleton height={48} width={130} style={{ 
+              borderRadius: '24px', 
+              background: 'linear-gradient(135deg, #f39c12 0%, #f5ab35 100%)',
+              boxShadow: '0 2px 6px rgba(243,156,18,0.3)' 
+            }} />
           </div>
         </div>
       </div>
-
-      {/* Search and Filter Bar - Enhanced */}
+      
+      {/* TabsContainer - exactly as in the real page */}
+      <div style={{ 
+        display: 'flex', 
+        borderBottom: '2px solid #eee', 
+        marginBottom: '2rem' 
+      }}>
+        {['All Programs', 'Top Programs', 'Fast Acceptance', 'Intake Offer'].map((tab, index) => (
+          <div key={index} style={{ 
+            padding: '0.75rem 1.25rem', 
+            fontWeight: 600, 
+            color: index === 0 ? '#f39c12' : '#666',
+            borderBottom: index === 0 ? '3px solid #f39c12' : 'none', 
+            marginBottom: '-2px',
+            cursor: 'pointer'
+          }}>
+            <Skeleton height={20} width={100 + (index * 15)} baseColor={index === 0 ? '#fff4e0' : '#f4f4f4'} highlightColor={index === 0 ? '#ffeacc' : '#e9e9e9'} />
+          </div>
+        ))}
+      </div>
+      
+      {/* ResultSummary */}
       <div style={{ 
         display: 'flex', 
         justifyContent: 'space-between', 
         alignItems: 'center', 
-        marginBottom: '2rem',
-        gap: '1.5rem',
-        backgroundColor: 'white',
-        padding: '1rem 1.5rem',
-        borderRadius: '12px',
-        boxShadow: '0 4px 15px rgba(0, 0, 0, 0.05)'
-      }}>
-        <div style={{ position: 'relative', flex: 1, maxWidth: '600px' }}>
-          <div style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)' }}>
-            <Skeleton circle height={18} width={18} />
-          </div>
-          <Skeleton height={50} style={{ borderRadius: '12px', paddingLeft: '2.8rem' }} />
-        </div>
-        <div style={{ display: 'flex', gap: '0.8rem' }}>
-          <Skeleton height={50} width={130} style={{ borderRadius: '8px' }} />
-          <Skeleton height={50} width={130} style={{ borderRadius: '8px' }} />
-        </div>
-      </div>
-      
-      {/* Filters Section */}
-      <div style={{ 
-        backgroundColor: 'white',
-        padding: '1.5rem',
-        borderRadius: '12px',
-        marginBottom: '2rem',
-        boxShadow: '0 4px 15px rgba(0, 0, 0, 0.05)'
-      }}>
-        {/* Filter Title */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-          <Skeleton height={24} width={120} />
-          <Skeleton height={32} width={100} style={{ borderRadius: '20px' }} />
-        </div>
-        
-        {/* Filter Categories */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '1.5rem' }}>
-          {Array(4).fill(0).map((_, index) => (
-            <div key={index} style={{ marginBottom: '1.5rem' }}>
-              <Skeleton height={20} width={120} style={{ marginBottom: '1rem' }} />
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
-                  <Skeleton height={20} width={20} style={{ borderRadius: '4px' }} />
-                  <Skeleton height={16} width={100} />
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
-                  <Skeleton height={20} width={20} style={{ borderRadius: '4px' }} />
-                  <Skeleton height={16} width={130} />
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
-                  <Skeleton height={20} width={20} style={{ borderRadius: '4px' }} />
-                  <Skeleton height={16} width={110} />
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-      
-      {/* Tabs */}
-      <div style={{ 
-        display: 'flex', 
-        gap: '1.5rem', 
         marginBottom: '1.5rem',
-        borderBottom: '2px solid #eee',
-        paddingBottom: '1rem'
+        backgroundColor: '#f8f9fa',
+        padding: '0.75rem 1.25rem',
+        borderRadius: '8px'
       }}>
-        {Array(4).fill(0).map((_, index) => (
-          <div key={index} style={{ 
-            padding: '0.5rem 1rem',
-            borderBottom: index === 0 ? '3px solid #f39c12' : 'none',
-            marginBottom: '-1rem'
-          }}>
-            <Skeleton height={24} width={110 + (index * 10)} style={{ borderRadius: '4px' }} />
-          </div>
-        ))}
+        <Skeleton height={18} width={250} />
+        <Skeleton height={36} width={120} style={{ borderRadius: '18px' }} />
       </div>
       
-      {/* Active Filters */}
-      <div style={{ 
-        display: 'flex', 
-        flexWrap: 'wrap', 
-        gap: '0.8rem', 
-        marginBottom: '2rem' 
-      }}>
-        <Skeleton height={36} width={140} style={{ borderRadius: '30px', boxShadow: '0 2px 6px rgba(0,0,0,0.08)' }} />
-        <Skeleton height={36} width={120} style={{ borderRadius: '30px', boxShadow: '0 2px 6px rgba(0,0,0,0.08)' }} />
-        <Skeleton height={36} width={150} style={{ borderRadius: '30px', boxShadow: '0 2px 6px rgba(0,0,0,0.08)' }} />
-      </div>
-      
-      {/* Programs Grid */}
+      {/* ProgramsGrid - exact layout of the real grid */}
       <div style={{ 
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
-        gap: '2rem',
-        marginBottom: '3rem'
+        gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+        gap: '1.5rem',
+        marginBottom: '2.5rem'
       }}>
         {Array(9).fill(0).map((_, index) => (
-          <ProgramCardSkeleton key={index} />
+          <div key={index} style={{ 
+            borderRadius: '12px', 
+            overflow: 'hidden',
+            transition: 'all 0.3s ease',
+            border: '1px solid #e0e0e0',
+            backgroundColor: 'white',
+            boxShadow: '0 4px 16px rgba(0, 0, 0, 0.08)',
+            height: '450px',
+            display: 'flex',
+            flexDirection: 'column'
+          }}>
+            {/* Image Container */}
+            <div style={{ height: '180px', position: 'relative' }}>
+              <Skeleton height={180} style={{ margin: 0 }} />
+              {/* Badge Position */}
+              <div style={{ position: 'absolute', bottom: '12px', left: '12px' }}>
+                <Skeleton height={26} width={100} style={{ 
+                  borderRadius: '13px', 
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                }} />
+              </div>
+              {/* Bookmark Button Position */}
+              <div style={{ position: 'absolute', top: '12px', right: '12px' }}>
+                <Skeleton circle height={36} width={36} style={{ 
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                  backgroundColor: 'white'
+                }} />
+              </div>
+            </div>
+            
+            {/* Content */}
+            <div style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', flex: 1 }}>
+              {/* Institution and Location */}
+              <div style={{ marginBottom: '1rem' }}>
+                {/* Institution */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                  <Skeleton circle height={16} width={16} />
+                  <Skeleton height={16} width={160} />
+                </div>
+                
+                {/* Location */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <Skeleton circle height={16} width={16} />
+                  <Skeleton height={16} width={140} />
+                </div>
+              </div>
+              
+              {/* Program Title */}
+              <Skeleton height={22} width="95%" style={{ marginBottom: '1rem' }} />
+              
+              {/* Tags */}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.6rem', marginBottom: '1rem' }}>
+                <Skeleton height={28} width={90} style={{ borderRadius: '14px' }} />
+                <Skeleton height={28} width={70} style={{ borderRadius: '14px' }} />
+                <Skeleton height={28} width={80} style={{ borderRadius: '14px' }} />
+              </div>
+              
+              {/* Description */}
+              <Skeleton height={14} count={2} style={{ marginBottom: '0.4rem' }} />
+              <Skeleton height={14} width="70%" style={{ marginBottom: '1.5rem' }} />
+              
+              {/* Meta Info - matches the footer of the card */}
+              <div style={{ 
+                display: 'flex', 
+                justifyContent: 'space-between', 
+                alignItems: 'center', 
+                marginTop: 'auto', 
+                paddingTop: '1rem', 
+                borderTop: '1px solid #eee' 
+              }}>
+                {/* Tuition */}
+                <div>
+                  <Skeleton height={16} width={80} />
+                  <Skeleton height={20} width={100} style={{ marginTop: '0.25rem' }} />
+                </div>
+                
+                {/* Details Button */}
+                <Skeleton height={38} width={100} style={{ 
+                  borderRadius: '19px',
+                  background: 'linear-gradient(135deg, #0c3b5e 0%, #104d7a 100%)'
+                }} />
+              </div>
+            </div>
+          </div>
         ))}
       </div>
       
-      {/* Pagination */}
+      {/* Pagination Controls */}
       <div style={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
+        display: 'flex',
+        justifyContent: 'center',
         alignItems: 'center',
-        gap: '0.8rem',
-        marginTop: '3rem',
+        gap: '0.5rem',
         marginBottom: '2rem'
       }}>
-        <Skeleton height={45} width={45} style={{ borderRadius: '8px', boxShadow: '0 2px 6px rgba(0,0,0,0.08)' }} />
-        <Skeleton height={45} width={45} style={{ borderRadius: '8px', boxShadow: '0 2px 6px rgba(0,0,0,0.08)' }} />
-        <Skeleton height={45} width={45} style={{ 
-          borderRadius: '8px', 
-          backgroundColor: '#f0f0f0',
-          boxShadow: '0 4px 8px rgba(0,0,0,0.12)'
+        {/* Previous Button */}
+        <Skeleton height={40} width={40} style={{ 
+          borderRadius: '4px',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
         }} />
-        <Skeleton height={45} width={45} style={{ borderRadius: '8px', boxShadow: '0 2px 6px rgba(0,0,0,0.08)' }} />
-        <Skeleton height={45} width={45} style={{ borderRadius: '8px', boxShadow: '0 2px 6px rgba(0,0,0,0.08)' }} />
+        
+        {/* Page Numbers */}
+        {[1, 2, 3, 4, 5].map((num, idx) => (
+          <Skeleton key={idx} height={40} width={40} style={{ 
+            borderRadius: '4px',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+            backgroundColor: idx === 0 ? '#f39c12' : '#ffffff'
+          }} />
+        ))}
+        
+        {/* Next Button */}
+        <Skeleton height={40} width={40} style={{ 
+          borderRadius: '4px',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+        }} />
+        
+        {/* Page Info */}
+        <div style={{ marginLeft: '1rem' }}>
+          <Skeleton height={16} width={300} />
+        </div>
+      </div>
+      
+      {/* Filter Backdrop (similar to the one that appears when filters are open) */}
+      <div style={{ 
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0, 0, 0, 0.1)',
+        backdropFilter: 'blur(2px)',
+        zIndex: 99,
+        opacity: 0.3,
+        visibility: 'visible'
+      }}></div>
+      
+      {/* Filter Container */}
+      <div style={{ 
+        position: 'fixed',
+        top: 0,
+        right: 0,
+        width: '380px',
+        height: '100vh',
+        backgroundColor: 'white',
+        boxShadow: '-5px 0 30px rgba(0, 0, 0, 0.15)',
+        padding: '2rem',
+        paddingTop: '100px',
+        zIndex: 100,
+        transform: 'translateX(90%)',
+        opacity: 0.7
+      }}>
+        {/* Filter Header */}
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center', 
+          marginBottom: '1.5rem',
+          paddingBottom: '1rem',
+          borderBottom: '1px solid #eee'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <Skeleton circle height={16} width={16} />
+            <Skeleton height={20} width={160} />
+          </div>
+          <Skeleton height={32} width={120} style={{ borderRadius: '16px' }} />
+        </div>
+        
+        {/* Some Filter Groups */}
+        {Array(4).fill(0).map((_, idx) => (
+          <div key={idx} style={{ 
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '0.5rem',
+            marginBottom: '1.5rem',
+            padding: '1rem',
+            backgroundColor: '#f9f9f9',
+            borderRadius: '12px'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+              <Skeleton circle height={16} width={16} />
+              <Skeleton height={18} width={100} />
+            </div>
+            
+            {idx === 0 ? (
+              // Sort Options
+              <Skeleton height={40} style={{ borderRadius: '4px' }} />
+            ) : idx === 1 ? (
+              // Checkboxes
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                {Array(3).fill(0).map((_, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <Skeleton height={18} width={18} style={{ borderRadius: '3px' }} />
+                    <Skeleton height={16} width={120 + (i * 10)} />
+                  </div>
+                ))}
+              </div>
+            ) : idx === 2 ? (
+              // Range Sliders
+              <>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                  <Skeleton height={16} width={60} />
+                  <Skeleton height={16} width={60} />
+                </div>
+                <Skeleton height={8} style={{ borderRadius: '4px', marginBottom: '1rem' }} />
+                <Skeleton height={8} style={{ borderRadius: '4px', marginBottom: '1rem' }} />
+                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                  <Skeleton height={36} width="45%" style={{ borderRadius: '4px' }} />
+                  <span>-</span>
+                  <Skeleton height={36} width="45%" style={{ borderRadius: '4px' }} />
+                </div>
+              </>
+            ) : (
+              // Dropdown
+              <Skeleton height={40} style={{ borderRadius: '4px' }} />
+            )}
+          </div>
+        ))}
+        
+        {/* Apply Button */}
+        <Skeleton height={48} style={{ 
+          width: '100%', 
+          borderRadius: '6px',
+          background: 'linear-gradient(135deg, #f39c12 0%, #f5ab35 100%)',
+          boxShadow: '0 4px 10px rgba(243, 156, 18, 0.3)',
+          marginTop: '1rem'
+        }} />
+      </div>
+      
+      {/* Mobile Filter Button (visible on mobile) */}
+      <div style={{ 
+        position: 'fixed', 
+        bottom: '24px', 
+        right: '24px', 
+        zIndex: 50,
+        display: 'block'
+      }}>
+        <Skeleton circle height={60} width={60} style={{ 
+          boxShadow: '0 4px 15px rgba(0, 0, 0, 0.2)',
+          background: 'linear-gradient(135deg, #f39c12 0%, #f5ab35 100%)'
+        }} />
       </div>
     </PageContainer>
   );
