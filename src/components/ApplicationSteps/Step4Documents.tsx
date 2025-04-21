@@ -773,12 +773,12 @@ const Step4Documents = ({ formData, updateFormData, onNext, onBack }: Step4Docum
     return isValid;
   }, [documentTypes, documents]);
   
-  // Modify the memoizedFileUpload function to handle potential mobile camera photos
+  // Simplify the memoizedFileUpload function
   const memoizedFileUpload = useCallback((docType: string, e: React.ChangeEvent<HTMLInputElement>) => {
     console.log(`File upload triggered for ${docType}`);
     
     try {
-      // Safely check for files
+      // Check for files
       const files = e.target.files;
       if (!files || files.length === 0) {
         console.log("No files selected");
@@ -789,176 +789,66 @@ const Step4Documents = ({ formData, updateFormData, onNext, onBack }: Step4Docum
       
       // Create a safe copy of the files array
       const fileList = Array.from(files);
-      if (fileList.length === 0) {
+      
+      // Simple filtering of valid files
+      const validFiles = fileList.filter(file => file instanceof File && file.size > 0);
+      
+      if (validFiles.length === 0) {
         console.log("No valid files to process");
         return;
       }
       
-      // Check if this is a mobile device for potential image optimization
-      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      // Create file info objects
+      const fileInfos: FileInfo[] = validFiles.map(file => ({
+        file,
+        id: `file-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
+      }));
       
-      // Process and optimize files if needed (especially for mobile camera photos which can be very large)
-      const processFiles = async () => {
-        // Prepare new file info objects - ensure they have valid files
-        const fileInfos: FileInfo[] = [];
-        
-        // Process each file
-        for (const file of fileList) {
-          if (!(file instanceof File) || file.size === 0) continue;
-          
-          // If it's an image on mobile and larger than 1MB, optimize it
-          if (isMobile && 
-              file.type.startsWith('image/') && 
-              file.size > 1024 * 1024 && 
-              (file.type === 'image/jpeg' || file.type === 'image/png')) {
-            
-            try {
-              console.log(`Optimizing large image (${(file.size / 1024 / 1024).toFixed(2)}MB)`);
-              
-              // Create an image element
-              const img = document.createElement('img');
-              const imgUrl = URL.createObjectURL(file);
-              
-              // Wait for image to load
-              await new Promise((resolve) => {
-                img.onload = resolve;
-                img.src = imgUrl;
-              });
-              
-              // Create canvas for resizing
-              const canvas = document.createElement('canvas');
-              let width = img.width;
-              let height = img.height;
-              
-              // Determine if we need to resize
-              const MAX_DIMENSION = 1600; // Max width/height
-              if (width > height && width > MAX_DIMENSION) {
-                height = Math.round((height * MAX_DIMENSION) / width);
-                width = MAX_DIMENSION;
-              } else if (height > MAX_DIMENSION) {
-                width = Math.round((width * MAX_DIMENSION) / height);
-                height = MAX_DIMENSION;
-              }
-              
-              // Resize the image
-              canvas.width = width;
-              canvas.height = height;
-              const ctx = canvas.getContext('2d');
-              if (!ctx) {
-                throw new Error('Could not get canvas context');
-              }
-              
-              ctx.drawImage(img, 0, 0, width, height);
-              
-              // Get the new file
-              const quality = 0.85; // Adjust as needed
-              const dataUrl = canvas.toDataURL(file.type, quality);
-              
-              // Clean up
-              URL.revokeObjectURL(imgUrl);
-              
-              // Convert data URL to Blob
-              const byteString = atob(dataUrl.split(',')[1]);
-              const mimeType = dataUrl.split(',')[0].split(':')[1].split(';')[0];
-              const ab = new ArrayBuffer(byteString.length);
-              const ia = new Uint8Array(ab);
-              
-              for (let i = 0; i < byteString.length; i++) {
-                ia[i] = byteString.charCodeAt(i);
-              }
-              
-              // Create optimized file
-              const optimizedFile = new File([ab], file.name, { type: mimeType });
-              console.log(`Image optimized from ${(file.size / 1024 / 1024).toFixed(2)}MB to ${(optimizedFile.size / 1024 / 1024).toFixed(2)}MB`);
-              
-              fileInfos.push({
-                file: optimizedFile,
-                id: `file-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
-              });
-            } catch (error) {
-              console.error('Error optimizing image:', error);
-              // Fall back to original file
-              fileInfos.push({
-                file,
-                id: `file-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
-              });
-            }
-          } else {
-            // Not an image that needs optimization or not on mobile
-            fileInfos.push({
-              file,
-              id: `file-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
-            });
-          }
-        }
-        
-        if (fileInfos.length === 0) {
-          console.log("No valid files to process after filtering and optimization");
-          return;
-        }
-        
-        // Create a new documents object to avoid mutations
-        const updatedDocuments = {...documents};
-        
-        // Update the specific document type
-        if (documentTypes[docType]?.multiple) {
-          // For multiple files, append to any existing files
-          const existingFiles = Array.isArray(updatedDocuments[docType]) 
-            ? updatedDocuments[docType] as FileInfo[]
-            : [];
-          
-          updatedDocuments[docType] = [...existingFiles, ...fileInfos];
-        } else {
-          // For single file, replace existing
-          updatedDocuments[docType] = [fileInfos[0]];
-        }
-        
-        // Update local state
-        setDocuments(updatedDocuments);
-        
-        // For parent component, use the same internal format since both interfaces now support FileInfo
-        updateFormData({
-          documents: {
-            ...formData.documents,
-            [docType]: updatedDocuments[docType]
-          },
-          documentsValid: true
-        });
-        
-        // Clear any errors
-        if (errors[docType]) {
-          setErrors(prev => {
-            const newErrors = {...prev};
-            delete newErrors[docType];
-            return newErrors;
-          });
-        }
-        
-        console.log(`Successfully processed ${fileInfos.length} files for ${docType}`);
-      };
+      // Create a new documents object to avoid mutations
+      const updatedDocuments = {...documents};
       
-      // Run our async processing
-      processFiles().catch(error => {
-        console.error("Error in file processing:", error);
+      // Update the specific document type
+      if (documentTypes[docType]?.multiple) {
+        // For multiple files, append to any existing files
+        const existingFiles = Array.isArray(updatedDocuments[docType]) 
+          ? updatedDocuments[docType] as FileInfo[]
+          : [];
+        
+        updatedDocuments[docType] = [...existingFiles, ...fileInfos];
+      } else {
+        // For single file, replace existing
+        updatedDocuments[docType] = [fileInfos[0]];
+      }
+      
+      // Update local state
+      setDocuments(updatedDocuments);
+      
+      // For parent component
+      updateFormData({
+        documents: {
+          ...formData.documents,
+          [docType]: updatedDocuments[docType]
+        },
+        documentsValid: true
       });
       
-      // Reset input field - important to clear the input to enable reselecting the same file
+      // Reset input field
       if (e.target) {
         e.target.value = '';
       }
+      
+      // Clear any errors
+      if (errors[docType]) {
+        setErrors(prev => {
+          const newErrors = {...prev};
+          delete newErrors[docType];
+          return newErrors;
+        });
+      }
+      
+      console.log(`Successfully processed ${fileInfos.length} files for ${docType}`);
     } catch (error: unknown) {
       console.error("Error processing files:", error);
-      
-      let errorMessage = "Unknown error";
-      if (error instanceof Error) {
-        errorMessage = error.message;
-      }
-      
-      console.error(`Error uploading files: ${errorMessage}`);
-      // Use alert only for critical errors to avoid disrupting user experience
-      if (errorMessage.includes("storage") || errorMessage.includes("memory")) {
-        alert(`Error uploading files: ${errorMessage}`);
-      }
       
       // Reset input field even on error
       if (e.target) {
@@ -1214,254 +1104,48 @@ const Step4Documents = ({ formData, updateFormData, onNext, onBack }: Step4Docum
     return [];
   };
 
-  // Initialize file inputs after component mounts
+  // Simplified file input creation - directly embed file inputs in the component
   useEffect(() => {
-    console.log("Document upload component mounted");
-    console.log("Available document types:", Object.keys(documentTypes));
-    
-    // Create file inputs dynamically to ensure they're properly registered
-    const createFileInputs = () => {
-      // First, remove any existing file inputs with the same IDs to avoid duplicates
-      Object.keys(documentTypes).forEach(docType => {
-        const existingInput = document.getElementById(`file-input-${docType}`);
-        if (existingInput && existingInput.parentNode) {
-          existingInput.parentNode.removeChild(existingInput);
-        }
-        
-        if (documentTypes[docType].multiple) {
-          const existingMoreInput = document.getElementById(`file-input-${docType}-more`);
-          if (existingMoreInput && existingMoreInput.parentNode) {
-            existingMoreInput.parentNode.removeChild(existingMoreInput);
-          }
-        }
-      });
-      
-      // Create a container for our file inputs if it doesn't exist
-      let fileInputContainer = document.getElementById('file-input-container');
-      if (!fileInputContainer) {
-        fileInputContainer = document.createElement('div');
-        fileInputContainer.id = 'file-input-container';
-        fileInputContainer.style.display = 'none';
-        document.body.appendChild(fileInputContainer);
-      }
-      
-      // Now create and append new file inputs
-      Object.keys(documentTypes).forEach(docType => {
-        const config = documentTypes[docType];
-        
-        // Main file input
-        const input = document.createElement('input');
-        input.id = `file-input-${docType}`;
-        input.type = 'file';
-        input.accept = config.accept;
-        if (config.multiple) input.multiple = true;
-        input.style.display = 'none';
-        
-        // Add event listener to handle file upload
-        input.addEventListener('change', (e) => {
-          memoizedFileUpload(docType, e as unknown as React.ChangeEvent<HTMLInputElement>);
-        });
-        
-        // Need to re-check fileInputContainer before each appendChild to satisfy TypeScript
-        const container = document.getElementById('file-input-container');
-        if (container) {
-          container.appendChild(input);
-          
-          // Create additional input for "add more" functionality
-          if (config.multiple) {
-            const moreInput = document.createElement('input');
-            moreInput.id = `file-input-${docType}-more`;
-            moreInput.type = 'file';
-            moreInput.accept = config.accept;
-            moreInput.multiple = true;
-            moreInput.style.display = 'none';
-            
-            moreInput.addEventListener('change', (e) => {
-              memoizedFileUpload(docType, e as unknown as React.ChangeEvent<HTMLInputElement>);
-            });
-            
-            // Re-check container again before appendChild
-            const moreContainer = document.getElementById('file-input-container');
-            if (moreContainer) {
-              moreContainer.appendChild(moreInput);
-            } else {
-              console.error("File input container no longer exists when appending more input");
-            }
-          }
-        } else {
-          console.error("File input container no longer exists when appending input");
-        }
-      });
-    };
-    
-    // Create the file inputs
-    createFileInputs();
-    
-    // Verify inputs were created
-    setTimeout(() => {
-      const missingInputs: string[] = [];
-      Object.keys(documentTypes).forEach(docType => {
-        const input = document.getElementById(`file-input-${docType}`);
-        if (!input) {
-          missingInputs.push(docType);
-        }
-      });
-      
-      if (missingInputs.length > 0) {
-        console.warn(`File inputs still missing after creation: ${missingInputs.join(', ')}`);
-        // Try creating again as a fallback
-        createFileInputs();
-      } else {
-        console.log("All file inputs successfully created");
-      }
-    }, 500);
-    
-    // Clean up function to remove the inputs when component unmounts
-    return () => {
-      const container = document.getElementById('file-input-container');
-      if (container && container.parentNode) {
-        container.parentNode.removeChild(container);
-      }
-    };
-  }, [documentTypes, memoizedFileUpload]);
-  
-  // Update parent formData when documents change
-  useEffect(() => {
-    updateFormData({ ...formData, documents });
-  }, [documents, formData, updateFormData]);
+    // Just validate documents when component mounts
+    validateDocuments();
+  }, [validateDocuments]);
 
-  // Add a fix for file input handling on mobile devices
-  useEffect(() => {
-    // Feature detection for iOS Safari
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
-    
-    if (isIOS) {
-      console.log("iOS device detected, applying iOS-specific fixes");
-      
-      // Create a backup container div for iOS handling
-      let iosFileInputContainer = document.getElementById('ios-file-input-container');
-      if (!iosFileInputContainer) {
-        iosFileInputContainer = document.createElement('div');
-        iosFileInputContainer.id = 'ios-file-input-container';
-        iosFileInputContainer.style.position = 'absolute';
-        iosFileInputContainer.style.top = '0';
-        iosFileInputContainer.style.left = '0';
-        iosFileInputContainer.style.width = '1px';
-        iosFileInputContainer.style.height = '1px';
-        iosFileInputContainer.style.overflow = 'hidden';
-        document.body.appendChild(iosFileInputContainer);
-      }
-    }
-    
-    // Clean up function
-    return () => {
-      const iosContainer = document.getElementById('ios-file-input-container');
-      if (iosContainer && iosContainer.parentNode) {
-        iosContainer.parentNode.removeChild(iosContainer);
-      }
-    };
-  }, []);
-
-  // Update the triggerFileInput function to handle iOS devices better
+  // Simplified triggerFileInput function
   const triggerFileInput = useCallback((docType: string, isMoreFiles = false) => {
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
-    const inputId = isMoreFiles ? `file-input-${docType}-more` : `file-input-${docType}`;
-    let input = document.getElementById(inputId) as HTMLInputElement | null;
+    // Simply create a new file input, configure it, and trigger a click
+    const input = document.createElement('input');
+    input.type = 'file';
     
-    if (input && input instanceof HTMLInputElement) {
-      // For iOS, we need to ensure the input is fully visible
-      if (isIOS) {
-        // Move to the iOS container for better handling
-        const iosContainer = document.getElementById('ios-file-input-container');
-        if (iosContainer) {
-          // Clone the input to avoid event listener issues
-          const newInput = input.cloneNode(true) as HTMLInputElement;
-          newInput.id = inputId;
-          
-          // Remove the old input and replace it
-          if (input.parentNode) {
-            input.parentNode.removeChild(input);
-          }
-          
-          // Add event listener to the new input
-          newInput.addEventListener('change', (e) => {
-            memoizedFileUpload(docType, e as unknown as React.ChangeEvent<HTMLInputElement>);
-          });
-          
-          iosContainer.appendChild(newInput);
-          input = newInput;
-        }
-      }
-      
-      // Check again after possible iOS changes
-      if (input) {
-        // For iOS, we need to ensure the input is briefly visible
-        if (isIOS) {
-          input.style.display = 'block';
-          input.style.position = 'absolute';
-          input.style.top = '0';
-          input.style.left = '0';
-          input.style.width = '100%';
-          input.style.height = '100%';
-          input.style.opacity = '0.01';
-          setTimeout(() => input?.click(), 10);
-          // Hide it again after clicking
-          setTimeout(() => {
-            if (input) input.style.display = 'none';
-          }, 250);
-        } else {
-          input.click();
-        }
-      }
-    } else {
-      console.error(`File input element ${inputId} not found`);
-      // Try to recreate the input dynamically
-      const container = document.getElementById(isIOS ? 'ios-file-input-container' : 'file-input-container');
-      if (container) {
-        const config = documentTypes[docType];
-        if (!config) {
-          console.error(`Configuration for document type ${docType} not found`);
-          return;
-        }
-        
-        const newInput = document.createElement('input');
-        newInput.id = inputId;
-        newInput.type = 'file';
-        newInput.accept = config.accept;
-        newInput.multiple = Boolean(isMoreFiles || config.multiple);
-        newInput.style.display = isIOS ? 'block' : 'none';
-        
-        if (isIOS) {
-          newInput.style.position = 'absolute';
-          newInput.style.top = '0';
-          newInput.style.left = '0';
-          newInput.style.width = '100%';
-          newInput.style.height = '100%';
-          newInput.style.opacity = '0.01';
-        }
-        
-        newInput.addEventListener('change', (e) => {
-          memoizedFileUpload(docType, e as unknown as React.ChangeEvent<HTMLInputElement>);
-        });
-        
-        container.appendChild(newInput);
-        setTimeout(() => newInput.click(), isIOS ? 50 : 10);
-        
-        // Hide iOS input after clicking
-        if (isIOS) {
-          setTimeout(() => {
-            newInput.style.display = 'none';
-          }, 250);
-        }
-      }
+    const config = documentTypes[docType];
+    if (!config) {
+      console.error(`Configuration for document type ${docType} not found`);
+      return;
     }
+    
+    input.accept = config.accept;
+    input.multiple = Boolean(isMoreFiles || config.multiple);
+    
+    // Add event listener and trigger click
+    input.addEventListener('change', (e) => {
+      memoizedFileUpload(docType, e as unknown as React.ChangeEvent<HTMLInputElement>);
+    });
+    
+    // We need to append to DOM temporarily for iOS
+    document.body.appendChild(input);
+    input.style.display = 'none';
+    
+    // Trigger click after a short delay
+    setTimeout(() => {
+      input.click();
+      
+      // Remove after clicking
+      setTimeout(() => {
+        if (input.parentNode) {
+          input.parentNode.removeChild(input);
+        }
+      }, 500);
+    }, 10);
   }, [documentTypes, memoizedFileUpload]);
-
-  // Add a touch-friendly event helper right before the return statement
-  const handleTouchStart = useCallback((e: React.TouchEvent) => {
-    // Prevent the default behavior which can cause issues on some mobile browsers
-    e.preventDefault();
-  }, []);
 
   return (
     <StepContainer>
@@ -1504,11 +1188,6 @@ const Step4Documents = ({ formData, updateFormData, onNext, onBack }: Step4Docum
                 e.preventDefault();
                 triggerFileInput(docType);
               }}
-              onTouchStart={handleTouchStart}
-              onTouchEnd={(e: React.TouchEvent) => {
-                e.preventDefault();
-                triggerFileInput(docType);
-              }}
             >
               {hasFiles(docType) ? (
                 <FilePreview onClick={(e: React.MouseEvent) => e.stopPropagation()}>
@@ -1545,11 +1224,6 @@ const Step4Documents = ({ formData, updateFormData, onNext, onBack }: Step4Docum
                         e.stopPropagation();
                         triggerFileInput(docType, true);
                       }}
-                      onTouchEnd={(e: React.TouchEvent) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        triggerFileInput(docType, true);
-                      }}
                     >
                       <FontAwesomeIcon icon={faUpload} /> 
                       <span>
@@ -1570,11 +1244,6 @@ const Step4Documents = ({ formData, updateFormData, onNext, onBack }: Step4Docum
                   </UploadText>
                   <UploadButton 
                     onClick={(e: React.MouseEvent) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      triggerFileInput(docType);
-                    }}
-                    onTouchEnd={(e: React.TouchEvent) => {
                       e.preventDefault();
                       e.stopPropagation();
                       triggerFileInput(docType);
