@@ -651,45 +651,12 @@ interface Step4DocumentsProps {
 const Step4Documents = ({ formData, updateFormData, onNext, onBack }: Step4DocumentsProps) => {
   // This state stores our internal representation with FileInfo objects
   const [documents, setDocuments] = useState<Record<string, FileInfo[] | null>>(() => {
-    if (formData.documents) {
-      try {
-        const cleanDocuments: Record<string, FileInfo[] | null> = {};
-        
-        // Process each document entry in the formData
-        Object.entries(formData.documents).forEach(([key, value]) => {
-          // Handle File[] case
-          if (Array.isArray(value) && value.length > 0) {
-            // Cast to any[] first to avoid filter compatibility issues
-            const fileArray = value as any[];
-            const validFiles = fileArray.filter((item: any) => item instanceof File) as File[];
-            
-            if (validFiles.length > 0) {
-              cleanDocuments[key] = validFiles.map((file: File) => ({
-                file: file,
-                id: `file-${Math.random().toString(36).substr(2, 9)}`
-              }));
-            } else {
-              cleanDocuments[key] = null;
-            }
-          } 
-          // Handle single File case
-          else if (value instanceof File) {
-            cleanDocuments[key] = [{
-              file: value,
-              id: `file-${Math.random().toString(36).substr(2, 9)}`
-            }];
-          } 
-          // Null or undefined case
-          else {
-            cleanDocuments[key] = null;
-          }
-        });
-        
-        return cleanDocuments;
-      } catch (error) {
-        console.error("Error initializing documents state:", error);
-        return {};
+    try {
+      if (formData.documents) {
+        return convertToInternalFormat(formData.documents);
       }
+    } catch (error) {
+      console.error("Error initializing documents state:", error);
     }
     return {};
   });
@@ -758,6 +725,7 @@ const Step4Documents = ({ formData, updateFormData, onNext, onBack }: Step4Docum
   
   const [errors, setErrors] = useState<Record<string, string>>({});
   
+  // Memoize the validation function to prevent unnecessary re-renders
   const validateDocuments = useCallback(() => {
     const newErrors: Record<string, string> = {};
     let isValid = true;
@@ -825,15 +793,13 @@ const Step4Documents = ({ formData, updateFormData, onNext, onBack }: Step4Docum
       
       // For parent component
       updateFormData({
-        documents: {
-          ...formData.documents,
-          [docType]: updatedDocuments[docType]
-        },
+        documents: updatedDocuments,
         documentsValid: true
       });
       
       // Immediately clear any errors for this document type
       setErrors(prev => {
+        if (!prev[docType]) return prev; // No change needed
         const newErrors = {...prev};
         delete newErrors[docType];
         return newErrors;
@@ -854,8 +820,45 @@ const Step4Documents = ({ formData, updateFormData, onNext, onBack }: Step4Docum
     }
   };
   
+  const handleFileRemove = (docType: string, fileId: string) => {
+    try {
+      // Safe check for documents
+      const typeDocuments = documents[docType];
+      if (!typeDocuments || !Array.isArray(typeDocuments) || typeDocuments.length === 0) {
+        console.log(`No documents found for ${docType}`);
+        return;
+      }
+      
+      // Filter out the file to remove
+      const filteredFiles = typeDocuments.filter(item => item.id !== fileId);
+      
+      // Create a new documents object
+      const updatedDocuments = {
+        ...documents,
+        [docType]: filteredFiles.length > 0 ? filteredFiles : null
+      };
+      
+      // Update local state
+      setDocuments(updatedDocuments);
+      
+      // For parent component
+      updateFormData({
+        documents: updatedDocuments
+      });
+      
+      console.log(`File removed from ${docType}`);
+      
+      // Re-validate documents if a required document was removed
+      if (documentTypes[docType]?.required) {
+        setTimeout(() => validateDocuments(), 0);
+      }
+    } catch (error) {
+      console.error("Error removing file:", error);
+    }
+  };
+  
   // Create a simple function to trigger file selection
-  const triggerFileInput = (docType: string, isMoreFiles = false) => {
+  const triggerFileInput = useCallback((docType: string, isMoreFiles = false) => {
     const inputId = `file-input-${docType}`;
     // Create a temporary file input 
     const input = document.createElement('input');
@@ -880,43 +883,157 @@ const Step4Documents = ({ formData, updateFormData, onNext, onBack }: Step4Docum
         input.parentNode.removeChild(input);
       }
     }, 1000);
-  };
-  
-  const handleFileRemove = (docType: string, fileId: string) => {
-    try {
-      // Safe check for documents
-      const typeDocuments = documents[docType];
-      if (!typeDocuments || !Array.isArray(typeDocuments) || typeDocuments.length === 0) {
-        console.log(`No documents found for ${docType}`);
-        return;
+  }, [documentTypes, handleFileUpload]);
+
+  // Update document types based on form data
+  useEffect(() => {
+    console.log("Form data received in Step4Documents:", formData);
+    
+    const newDocumentTypes: Record<string, {
+      title: string;
+      description: string;
+      icon: IconDefinition;
+      accept: string;
+      multiple?: boolean;
+      required?: boolean;
+    }> = {
+      highSchoolTranscripts: {
+        title: 'High School Transcripts',
+        description: 'Please upload your high school transcripts and completion letter',
+        icon: faFileAlt,
+        accept: '.pdf,.doc,.docx,.jpg,.jpeg,.png',
+        multiple: true,
+        required: true
+      },
+      languageResults: {
+        title: 'Language Test Results',
+        description: 'Please upload your language proficiency test results (IELTS, TOEFL, etc.)',
+        icon: faFilePdf,
+        accept: '.pdf,.doc,.docx,.jpg,.jpeg,.png',
+        required: formData.languageProficiency?.exam && formData.languageProficiency.exam !== 'None'
+      },
+      passport: {
+        title: 'Passport Copy',
+        description: 'Please upload a clear copy of your passport',
+        icon: faFileImage,
+        accept: '.pdf,.jpg,.jpeg,.png',
+        required: true
+      },
+      resume: {
+        title: 'Resume/CV',
+        description: 'Please upload your current resume',
+        icon: faFileWord,
+        accept: '.pdf,.doc,.docx',
+        required: true
+      },
+      financialDocuments: {
+        title: 'Financial Documents',
+        description: 'Please upload bank statements, fixed deposits, or other financial documents showing sufficient funds',
+        icon: faFileExcel,
+        accept: '.pdf,.doc,.docx,.jpg,.jpeg,.png',
+        multiple: true,
+        required: false
       }
-      
-      // Filter out the file to remove
-      const filteredFiles = typeDocuments.filter(item => item.id !== fileId);
-      
-      // Create a new documents object
-      const updatedDocuments = {
-        ...documents,
-        [docType]: filteredFiles.length > 0 ? filteredFiles : null
+    };
+
+    if (formData.educationEntries && Array.isArray(formData.educationEntries)) {
+      formData.educationEntries.forEach((entry: any, index: number) => {
+        if (entry.level === 'High School') return;
+
+        const educationKey = `education_${entry.level.replace(/\s+/g, '_').toLowerCase()}_transcripts`;
+        const levelName = entry.level.replace("'s", "");
+
+        newDocumentTypes[educationKey] = {
+          title: `${entry.level} Transcripts`,
+          description: `Please upload your ${levelName.toLowerCase()} transcripts and completion letter from ${entry.institution || ''}`,
+          icon: faFileAlt,
+          accept: '.pdf,.doc,.docx,.jpg,.jpeg,.png',
+          multiple: true,
+          required: true
+        };
+      });
+    }
+
+    if (formData.educationSponsor && formData.educationSponsor.name) {
+      newDocumentTypes.sponsorLetter = {
+        title: 'Sponsor Letter',
+        description: 'Please upload your sponsor\'s letter of support',
+        icon: faFileAlt,
+        accept: '.pdf,.doc,.docx',
+        required: true
       };
       
-      // Update local state
-      setDocuments(updatedDocuments);
+      newDocumentTypes.sponsorDocuments = {
+        title: 'Sponsor Documents',
+        description: 'Please upload your sponsor\'s financial documents and ID proof',
+        icon: faFileAlt,
+        accept: '.pdf,.doc,.docx,.jpg,.jpeg,.png',
+        multiple: true,
+        required: true
+      };
+    } else {
+      newDocumentTypes.sponsorLetter = {
+        title: 'Sponsor Letter',
+        description: 'If you have a sponsor, please upload their letter of support',
+        icon: faFileAlt,
+        accept: '.pdf,.doc,.docx',
+        required: false
+      };
       
-      // For parent component, use the same internal format
-      updateFormData({
-        documents: {
-          ...formData.documents,
-          [docType]: updatedDocuments[docType]
-        }
-      });
-      
-      console.log(`File removed from ${docType}`);
-    } catch (error) {
-      console.error("Error removing file:", error);
+      newDocumentTypes.sponsorDocuments = {
+        title: 'Sponsor Documents',
+        description: 'If you have a sponsor, please upload their financial documents and ID proof',
+        icon: faFileAlt,
+        accept: '.pdf,.doc,.docx,.jpg,.jpeg,.png',
+        multiple: true,
+        required: false
+      };
     }
-  };
-  
+
+    setDocumentTypes(newDocumentTypes);
+    
+  }, [formData.languageProficiency, formData.educationEntries, formData.educationSponsor]);
+
+  // Handle document loading from formData
+  useEffect(() => {
+    // If documents are already in form data, preserve them
+    if (formData.documents) {
+      // Only update if there's a difference to avoid re-renders
+      const internalDocs = convertToInternalFormat(formData.documents);
+      if (JSON.stringify(internalDocs) !== JSON.stringify(documents)) {
+        console.log("Loading documents from formData:", internalDocs);
+        setDocuments(internalDocs);
+      }
+    }
+  }, [formData.documents]);
+
+  // Validate documents when needed
+  useEffect(() => {
+    validateDocuments();
+  }, [validateDocuments]);
+
+  // Update parent about validation state
+  useEffect(() => {
+    const isValid = Object.keys(errors).length === 0;
+    updateFormData({
+      documentsValid: isValid
+    });
+  }, [errors, updateFormData]);
+
+  // Memoize helper functions
+  const hasFiles = useCallback((docType: string): boolean => {
+    const fileInfos = documents[docType];
+    return Boolean(fileInfos && Array.isArray(fileInfos) && fileInfos.length > 0);
+  }, [documents]);
+
+  const getFileInfos = useCallback((docType: string): FileInfo[] => {
+    const files = documents[docType];
+    if (files && Array.isArray(files) && files.length > 0) {
+      return files;
+    }
+    return [];
+  }, [documents]);
+
   const formatFileSize = (bytes: number) => {
     if (bytes === 0) return '0 Bytes';
     const k = 1024;
@@ -964,49 +1081,6 @@ const Step4Documents = ({ formData, updateFormData, onNext, onBack }: Step4Docum
       default:
         return faFile;
     }
-  };
-  
-  // Validate documents when the component mounts or documents change
-  useEffect(() => {
-    validateDocuments();
-  }, [validateDocuments]);
-
-  // Separate useEffect to update formData when documents change
-  useEffect(() => {
-    updateFormData({
-      documents: documents,
-      documentsValid: Object.keys(errors).length === 0
-    });
-  }, [documents, errors, updateFormData]);
-
-  // Add browser environment info for debugging
-  useEffect(() => {
-    // Log browser information to help identify compatibility issues
-    const browserInfo = {
-      userAgent: navigator.userAgent,
-      platform: navigator.platform,
-      vendor: navigator.vendor,
-      appName: navigator.appName,
-      appVersion: navigator.appVersion
-    };
-    
-    console.log("Browser information:", browserInfo);
-    console.log("Document state initialized with:", documents);
-  }, [documents]);
-
-  // Add a helper function to safely check if a document type has files
-  const hasFiles = (docType: string): boolean => {
-    const fileInfos = documents[docType];
-    return Boolean(fileInfos && Array.isArray(fileInfos) && fileInfos.length > 0);
-  };
-
-  // Function to safely get typed file infos
-  const getFileInfos = (docType: string): FileInfo[] => {
-    const files = documents[docType];
-    if (files && Array.isArray(files) && files.length > 0) {
-      return files;
-    }
-    return [];
   };
 
   return (
@@ -1130,15 +1204,6 @@ const Step4Documents = ({ formData, updateFormData, onNext, onBack }: Step4Docum
           </DocumentUploader>
         ))}
       </DocumentsGrid>
-      
-      <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'space-between' }}>
-        <UploadButton onClick={onBack}>
-          Back
-        </UploadButton>
-        <UploadButton onClick={onNext}>
-          Next
-        </UploadButton>
-      </div>
     </StepContainer>
   );
 };
