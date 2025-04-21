@@ -185,49 +185,16 @@ const ErrorMessage = styled.span`
 `;
 
 interface Step1WelcomeProps {
-  formData: {
-    applicantType?: string;
-    agentId?: string;
-    ambassadorId?: string;
-    validationErrors?: { [key: string]: string };
-  };
+  formData: any;
   updateFormData: (data: any) => void;
   onNext: () => void;
 }
 
 const Step1Welcome: React.FC<Step1WelcomeProps> = ({ formData, updateFormData, onNext }) => {
-  const [errors, setErrors] = useState<{ [key: string]: string }>({});
-
   // Debug render
   useEffect(() => {
     console.log("Step1Welcome rendered with formData:", formData);
-    
-    // If there are validation errors from the parent component, use them
-    if (formData.validationErrors) {
-      setErrors({...formData.validationErrors});
-      
-      // Clear the validation errors in the parent component to avoid showing them repeatedly
-      updateFormData({
-        ...formData,
-        validationErrors: {}
-      });
-    }
-  }, [formData, updateFormData]);
-
-  const validateForm = () => {
-    const newErrors: { [key: string]: string } = {};
-    
-    if (!formData.applicantType) {
-      newErrors.applicantType = 'Please select who is submitting the application';
-    } else if (formData.applicantType === 'Agent' && !formData.agentId) {
-      newErrors.agentId = 'Please enter your agent ID';
-    } else if (formData.applicantType === 'Ambassador' && !formData.ambassadorId) {
-      newErrors.ambassadorId = 'Please enter your ambassador ID';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
+  }, [formData]);
 
   const handleApplicantTypeSelect = (type: 'Student' | 'Agent' | 'Ambassador') => {
     console.log(`Selected applicant type: ${type}`);
@@ -238,15 +205,14 @@ const Step1Welcome: React.FC<Step1WelcomeProps> = ({ formData, updateFormData, o
       applicantType: type,
       // Force empty values for other fields to ensure they're present
       agentId: type === 'Agent' ? (formData.agentId || '') : '',
-      ambassadorId: type === 'Ambassador' ? (formData.ambassadorId || '') : ''
+      ambassadorId: type === 'Ambassador' ? (formData.ambassadorId || '') : '',
+      // Clear validation errors when a selection is made
+      validationErrors: {}
     };
     console.log("Updating formData with:", JSON.stringify(updatedData, null, 2));
     
     // Update the form data
     updateFormData(updatedData);
-    
-    // Clear any validation errors
-    setErrors({});
     
     // Log the selection was successful
     console.log(`Successfully selected applicant type: ${type}`);
@@ -256,25 +222,31 @@ const Step1Welcome: React.FC<Step1WelcomeProps> = ({ formData, updateFormData, o
     if (activeElement) {
       activeElement.blur();
     }
-    
-    // If Auto-continue is desired, call onNext after selection
-    // Commented out to prevent auto-progression to next step
-    // if (type === 'Student') {
-    //   onNext();
-    // }
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
+    // Clear any validation errors for this field
+    const updatedValidationErrors = formData.validationErrors ? 
+      { ...formData.validationErrors } : {};
+    
+    if (updatedValidationErrors[name]) {
+      delete updatedValidationErrors[name];
+    }
+    
     updateFormData({
       ...formData,
       [name]: value,
-      isPersonalInfoValid: false
+      isPersonalInfoValid: false,
+      validationErrors: updatedValidationErrors
     });
   };
 
   console.log("Rendering Step1Welcome with formData:", formData);
   console.log("Current applicantType:", formData.applicantType);
+  
+  // Get validation errors from formData
+  const validationErrors = formData.validationErrors || {};
 
   return (
     <StepContainer className="step-container-interactive">
@@ -396,7 +368,7 @@ const Step1Welcome: React.FC<Step1WelcomeProps> = ({ formData, updateFormData, o
           </ApplicantTypeCard>
         </ApplicantTypeOptions>
         
-        {errors.applicantType && <ErrorMessage>{errors.applicantType}</ErrorMessage>}
+        {validationErrors.applicantType && <ErrorMessage>{validationErrors.applicantType}</ErrorMessage>}
         
         {formData.applicantType === 'Agent' && (
           <InputGroup className="interactive-section">
@@ -411,7 +383,7 @@ const Step1Welcome: React.FC<Step1WelcomeProps> = ({ formData, updateFormData, o
               required 
               className="interactive-input"
             />
-            {errors.agentId && <ErrorMessage>{errors.agentId}</ErrorMessage>}
+            {validationErrors.agentId && <ErrorMessage>{validationErrors.agentId}</ErrorMessage>}
           </InputGroup>
         )}
         
@@ -428,7 +400,7 @@ const Step1Welcome: React.FC<Step1WelcomeProps> = ({ formData, updateFormData, o
               required 
               className="interactive-input"
             />
-            {errors.ambassadorId && <ErrorMessage>{errors.ambassadorId}</ErrorMessage>}
+            {validationErrors.ambassadorId && <ErrorMessage>{validationErrors.ambassadorId}</ErrorMessage>}
           </InputGroup>
         )}
       </ApplicantTypeSection>

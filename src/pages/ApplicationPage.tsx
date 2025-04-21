@@ -636,7 +636,7 @@ interface FormData {
   applicantType?: string;
   agentId?: string;
   ambassadorId?: string;
-  validationErrors?: Record<string, string>;
+  validationErrors?: {[key: string]: string};
 }
 
 const ApplicationPage: React.FC = () => {
@@ -815,57 +815,43 @@ const ApplicationPage: React.FC = () => {
       // For Step 1, validate applicant type and ID
       console.log("Checking applicant type:", formData.applicantType);
       
-      let hasError = false;
-      const updatedFormData = { ...formData };
+      // Create an object to store validation errors
+      const validationErrors: {[key: string]: string} = {};
       
-      // Instead of alerts, set validation flags in the form data
       if (!formData.applicantType) {
         console.log("Error: No applicant type selected");
-        updatedFormData.validationErrors = {
-          ...updatedFormData.validationErrors,
-          applicantType: 'Please select who is submitting the application'
-        };
-        hasError = true;
-        
-        // Scroll to applicant type section
-        document.querySelector('.applicant-type-section')?.scrollIntoView({ 
-          behavior: 'smooth', 
-          block: 'center' 
-        });
+        validationErrors.applicantType = 'Please select who is submitting the application';
       } else if (formData.applicantType === 'Agent' && !formData.agentId) {
         console.log("Error: Agent selected but no Agent ID provided");
-        updatedFormData.validationErrors = {
-          ...updatedFormData.validationErrors,
-          agentId: 'Please enter your agent ID'
-        };
-        hasError = true;
-        
-        // Focus on agent ID input
-        document.getElementById('agentId')?.focus();
+        validationErrors.agentId = 'Please enter your agent ID';
       } else if (formData.applicantType === 'Ambassador' && !formData.ambassadorId) {
         console.log("Error: Ambassador selected but no Ambassador ID provided");
-        updatedFormData.validationErrors = {
-          ...updatedFormData.validationErrors,
-          ambassadorId: 'Please enter your ambassador ID'
-        };
-        hasError = true;
-        
-        // Focus on ambassador ID input
-        document.getElementById('ambassadorId')?.focus();
+        validationErrors.ambassadorId = 'Please enter your ambassador ID';
       }
       
-      if (hasError) {
-        // Update form data with validation errors
-        setFormData(updatedFormData);
+      // If there are validation errors, update formData with them and scroll to appropriate section
+      if (Object.keys(validationErrors).length > 0) {
+        setFormData(prevState => ({
+          ...prevState,
+          validationErrors
+        }));
+        
+        // Scroll to the applicant type section
+        const applicantTypeSection = document.querySelector('.applicant-type-section');
+        if (applicantTypeSection) {
+          applicantTypeSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
         return;
       }
       
       console.log("Step 1 validation passed, proceeding to step 2");
       // Force update form data before proceeding
-      updatedFormData.applicantType = formData.applicantType;  // Ensure this is set correctly
-      updatedFormData.isPersonalInfoValid = false;
-      updatedFormData.validationErrors = {}; // Clear any validation errors
-      
+      const updatedFormData = {
+        ...formData,
+        applicantType: formData.applicantType,  // Ensure this is set correctly
+        isPersonalInfoValid: false,
+        validationErrors: {}  // Clear any validation errors
+      };
       console.log("Setting updated form data:", JSON.stringify(updatedFormData, null, 2));
       setFormData(updatedFormData);
       
@@ -1105,10 +1091,6 @@ const ApplicationPage: React.FC = () => {
     
     // First step has no back button
     if (currentStep === 1) {
-      // Check if there are validation errors
-      const hasValidationErrors = formData.validationErrors && 
-        Object.keys(formData.validationErrors).length > 0;
-                               
       return (
         <>
           <div></div> {/* Empty div for spacing */}
@@ -1130,7 +1112,7 @@ const ApplicationPage: React.FC = () => {
               boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)'
             }}
           >
-            {hasValidationErrors ? 'Please fix the errors' : 'Continue'} <FontAwesomeIcon icon={faChevronRight} />
+            Continue <FontAwesomeIcon icon={faChevronRight} />
           </Button>
         </>
       );
