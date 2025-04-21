@@ -773,8 +773,8 @@ const Step4Documents = ({ formData, updateFormData, onNext, onBack }: Step4Docum
     return isValid;
   }, [documentTypes, documents]);
   
-  // Simplify the memoizedFileUpload function
-  const memoizedFileUpload = useCallback((docType: string, e: React.ChangeEvent<HTMLInputElement>) => {
+  // Simplified file upload handler
+  const handleFileUpload = (docType: string, e: React.ChangeEvent<HTMLInputElement>) => {
     console.log(`File upload triggered for ${docType}`);
     
     try {
@@ -832,30 +832,55 @@ const Step4Documents = ({ formData, updateFormData, onNext, onBack }: Step4Docum
         documentsValid: true
       });
       
-      // Reset input field
+      // Immediately clear any errors for this document type
+      setErrors(prev => {
+        const newErrors = {...prev};
+        delete newErrors[docType];
+        return newErrors;
+      });
+      
+      // Reset the input value to allow selecting the same file again
       if (e.target) {
         e.target.value = '';
       }
       
-      // Clear any errors
-      if (errors[docType]) {
-        setErrors(prev => {
-          const newErrors = {...prev};
-          delete newErrors[docType];
-          return newErrors;
-        });
-      }
-      
       console.log(`Successfully processed ${fileInfos.length} files for ${docType}`);
-    } catch (error: unknown) {
+    } catch (error) {
       console.error("Error processing files:", error);
-      
       // Reset input field even on error
       if (e.target) {
         e.target.value = '';
       }
     }
-  }, [documents, documentTypes, errors, formData.documents, updateFormData]);
+  };
+  
+  // Create a simple function to trigger file selection
+  const triggerFileInput = (docType: string, isMoreFiles = false) => {
+    const inputId = `file-input-${docType}`;
+    // Create a temporary file input 
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = documentTypes[docType].accept;
+    input.multiple = Boolean(isMoreFiles || documentTypes[docType].multiple);
+    
+    // Handle the file selection
+    input.addEventListener('change', (e: Event) => {
+      handleFileUpload(docType, e as unknown as React.ChangeEvent<HTMLInputElement>);
+    });
+    
+    // Add to document temporarily
+    document.body.appendChild(input);
+    
+    // Trigger click and then remove
+    input.click();
+    
+    // Remove after a delay to ensure the change event has time to fire
+    setTimeout(() => {
+      if (input.parentNode) {
+        input.parentNode.removeChild(input);
+      }
+    }, 1000);
+  };
   
   const handleFileRemove = (docType: string, fileId: string) => {
     try {
@@ -941,138 +966,18 @@ const Step4Documents = ({ formData, updateFormData, onNext, onBack }: Step4Docum
     }
   };
   
+  // Validate documents when the component mounts or documents change
   useEffect(() => {
-    const isValid = validateDocuments();
-    
-    updateFormData({ 
-      documentsValid: isValid,
-      documents: documents
+    validateDocuments();
+  }, [validateDocuments]);
+
+  // Separate useEffect to update formData when documents change
+  useEffect(() => {
+    updateFormData({
+      documents: documents,
+      documentsValid: Object.keys(errors).length === 0
     });
-    
-  }, [documents, updateFormData, validateDocuments]);
-  
-  useEffect(() => {
-    console.log("Form data received in Step4Documents:", formData);
-    
-    const newDocumentTypes: Record<string, {
-      title: string;
-      description: string;
-      icon: IconDefinition;
-      accept: string;
-      multiple?: boolean;
-      required?: boolean;
-    }> = {
-      highSchoolTranscripts: {
-        title: 'High School Transcripts',
-        description: 'Please upload your high school transcripts and completion letter',
-        icon: faFileAlt,
-        accept: '.pdf,.doc,.docx,.jpg,.jpeg,.png',
-        multiple: true,
-        required: true
-      },
-      languageResults: {
-        title: 'Language Test Results',
-        description: 'Please upload your language proficiency test results (IELTS, TOEFL, etc.)',
-        icon: faFilePdf,
-        accept: '.pdf,.doc,.docx,.jpg,.jpeg,.png',
-        required: formData.languageProficiency?.exam && formData.languageProficiency.exam !== 'None'
-      },
-      passport: {
-        title: 'Passport Copy',
-        description: 'Please upload a clear copy of your passport',
-        icon: faFileImage,
-        accept: '.pdf,.jpg,.jpeg,.png',
-        required: true
-      },
-      resume: {
-        title: 'Resume/CV',
-        description: 'Please upload your current resume',
-        icon: faFileWord,
-        accept: '.pdf,.doc,.docx',
-        required: true
-      },
-      financialDocuments: {
-        title: 'Financial Documents',
-        description: 'Please upload bank statements, fixed deposits, or other financial documents showing sufficient funds',
-        icon: faFileExcel,
-        accept: '.pdf,.doc,.docx,.jpg,.jpeg,.png',
-        multiple: true,
-        required: false
-      }
-    };
-
-    if (formData.educationEntries && Array.isArray(formData.educationEntries)) {
-      formData.educationEntries.forEach((entry: any, index: number) => {
-        if (entry.level === 'High School') return;
-
-        const educationKey = `education_${entry.level.replace(/\s+/g, '_').toLowerCase()}_transcripts`;
-        const levelName = entry.level.replace("'s", "");
-
-        newDocumentTypes[educationKey] = {
-          title: `${entry.level} Transcripts`,
-          description: `Please upload your ${levelName.toLowerCase()} transcripts and completion letter from ${entry.institution || ''}`,
-          icon: faFileAlt,
-          accept: '.pdf,.doc,.docx,.jpg,.jpeg,.png',
-          multiple: true,
-          required: true
-        };
-      });
-    }
-
-    if (formData.educationSponsor && formData.educationSponsor.name) {
-      newDocumentTypes.sponsorLetter = {
-        title: 'Sponsor Letter',
-        description: 'Please upload your sponsor\'s letter of support',
-        icon: faFileAlt,
-        accept: '.pdf,.doc,.docx',
-        required: true
-      };
-      
-      newDocumentTypes.sponsorDocuments = {
-        title: 'Sponsor Documents',
-        description: 'Please upload your sponsor\'s financial documents and ID proof',
-        icon: faFileAlt,
-        accept: '.pdf,.doc,.docx,.jpg,.jpeg,.png',
-        multiple: true,
-        required: true
-      };
-    } else {
-      newDocumentTypes.sponsorLetter = {
-        title: 'Sponsor Letter',
-        description: 'If you have a sponsor, please upload their letter of support',
-        icon: faFileAlt,
-        accept: '.pdf,.doc,.docx',
-        required: false
-      };
-      
-      newDocumentTypes.sponsorDocuments = {
-        title: 'Sponsor Documents',
-        description: 'If you have a sponsor, please upload their financial documents and ID proof',
-        icon: faFileAlt,
-        accept: '.pdf,.doc,.docx,.jpg,.jpeg,.png',
-        multiple: true,
-        required: false
-      };
-    }
-
-    setDocumentTypes(newDocumentTypes);
-    console.log("Updated document types:", newDocumentTypes);
-    
-    // If documents are already in form data, use our converter function to handle all possible formats
-    if (formData.documents) {
-      const internalDocs = convertToInternalFormat(formData.documents);
-      setDocuments(internalDocs);
-    }
-    
-    setTimeout(() => {
-      validateDocuments();
-    }, 0);
-    
-  }, [formData, validateDocuments]);
-
-  useEffect(() => {
-    console.log("Documents state updated:", documents);
-  }, [documents]);
+  }, [documents, errors, updateFormData]);
 
   // Add browser environment info for debugging
   useEffect(() => {
@@ -1103,49 +1008,6 @@ const Step4Documents = ({ formData, updateFormData, onNext, onBack }: Step4Docum
     }
     return [];
   };
-
-  // Simplified file input creation - directly embed file inputs in the component
-  useEffect(() => {
-    // Just validate documents when component mounts
-    validateDocuments();
-  }, [validateDocuments]);
-
-  // Simplified triggerFileInput function
-  const triggerFileInput = useCallback((docType: string, isMoreFiles = false) => {
-    // Simply create a new file input, configure it, and trigger a click
-    const input = document.createElement('input');
-    input.type = 'file';
-    
-    const config = documentTypes[docType];
-    if (!config) {
-      console.error(`Configuration for document type ${docType} not found`);
-      return;
-    }
-    
-    input.accept = config.accept;
-    input.multiple = Boolean(isMoreFiles || config.multiple);
-    
-    // Add event listener and trigger click
-    input.addEventListener('change', (e) => {
-      memoizedFileUpload(docType, e as unknown as React.ChangeEvent<HTMLInputElement>);
-    });
-    
-    // We need to append to DOM temporarily for iOS
-    document.body.appendChild(input);
-    input.style.display = 'none';
-    
-    // Trigger click after a short delay
-    setTimeout(() => {
-      input.click();
-      
-      // Remove after clicking
-      setTimeout(() => {
-        if (input.parentNode) {
-          input.parentNode.removeChild(input);
-        }
-      }, 500);
-    }, 10);
-  }, [documentTypes, memoizedFileUpload]);
 
   return (
     <StepContainer>
@@ -1184,13 +1046,17 @@ const Step4Documents = ({ formData, updateFormData, onNext, onBack }: Step4Docum
             <UploaderDescription>{config.description}</UploaderDescription>
             
             <UploadArea 
-              onClick={(e: React.MouseEvent) => {
+              onClick={(e) => {
                 e.preventDefault();
                 triggerFileInput(docType);
               }}
+              style={{ 
+                borderColor: errors[docType] ? '#dc3545' : undefined,
+                borderWidth: errors[docType] ? '2px' : undefined 
+              }}
             >
               {hasFiles(docType) ? (
-                <FilePreview onClick={(e: React.MouseEvent) => e.stopPropagation()}>
+                <FilePreview onClick={(e) => e.stopPropagation()}>
                   {getFileInfos(docType).map((fileInfo) => (
                     <FilePreviewItem key={fileInfo.id}>
                       <FilePreviewIcon>
@@ -1203,7 +1069,7 @@ const Step4Documents = ({ formData, updateFormData, onNext, onBack }: Step4Docum
                       <FilePreviewActions>
                         <FilePreviewActionButton 
                           className="remove"
-                          onClick={(e: React.MouseEvent) => {
+                          onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
                             handleFileRemove(docType, fileInfo.id);
@@ -1219,7 +1085,7 @@ const Step4Documents = ({ formData, updateFormData, onNext, onBack }: Step4Docum
                   
                   {config.multiple && (
                     <AddMoreButton 
-                      onClick={(e: React.MouseEvent) => {
+                      onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
                         triggerFileInput(docType, true);
@@ -1243,7 +1109,7 @@ const Step4Documents = ({ formData, updateFormData, onNext, onBack }: Step4Docum
                     Click to browse and select {config.multiple ? "files" : "a file"}
                   </UploadText>
                   <UploadButton 
-                    onClick={(e: React.MouseEvent) => {
+                    onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
                       triggerFileInput(docType);
@@ -1264,6 +1130,15 @@ const Step4Documents = ({ formData, updateFormData, onNext, onBack }: Step4Docum
           </DocumentUploader>
         ))}
       </DocumentsGrid>
+      
+      <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'space-between' }}>
+        <UploadButton onClick={onBack}>
+          Back
+        </UploadButton>
+        <UploadButton onClick={onNext}>
+          Next
+        </UploadButton>
+      </div>
     </StepContainer>
   );
 };
