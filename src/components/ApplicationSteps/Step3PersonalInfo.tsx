@@ -486,6 +486,7 @@ interface WorkExperience {
   position: string;
   startDate: string;
   endDate: string;
+  currentJob?: boolean; // Add currentJob flag
   jobDescription: string;
 }
 
@@ -566,11 +567,14 @@ interface FormData {
     position: string;
     startDate: string;
     endDate: string;
+    currentJob?: boolean; // Add currentJob flag
     jobDescription: string;
   };
   visaRejection: {
     hasRejection: boolean;
     country: string;
+    countries?: string[]; // Add support for multiple countries
+    details?: string; // Add optional details field
   };
   attemptingNextStep?: boolean;
   isPersonalInfoValid?: boolean;
@@ -698,6 +702,31 @@ const validateDateFormat = (date: string): boolean => {
   }
 };
 
+// Create utility functions for input validation
+const validatePhoneNumber = (input: string): string => {
+  // Only allow digits and limit to 10 digits
+  return input.replace(/\D/g, '').slice(0, 10);
+};
+
+const validateScoreFormat = (input: string): string => {
+  // Only allow one decimal place and max value of 9.0
+  const filtered = input.replace(/[^\d.]/g, ''); // Only allow digits and decimal point
+  
+  // Handle decimal points
+  const parts = filtered.split('.');
+  if (parts.length > 1) {
+    // Ensure only one decimal point and one decimal place
+    return `${parts[0]}.${parts[1].charAt(0)}`;
+  }
+  
+  // Check if the number is greater than 9
+  if (parseFloat(filtered) > 9) {
+    return '9.0';
+  }
+  
+  return filtered;
+};
+
 const Step3PersonalInfo: React.FC<Step3PersonalInfoProps> = ({ formData, updateFormData, onNext, onBack }) => {
   const [profilePicture, setProfilePicture] = useState<File | null>(null);
   const [profilePicturePreview, setProfilePicturePreview] = useState<string | null>(null);
@@ -770,17 +799,30 @@ const Step3PersonalInfo: React.FC<Step3PersonalInfoProps> = ({ formData, updateF
     visaRejectionCountry: visaRejectionCountryRef
   }), []);
 
+  // Modified handler functions
   const handlePersonalInfoChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
+    const { name, value, type } = e.target;
+    let modifiedValue = value;
+
+    // Apply restrictions based on field type
+    if (name === 'phoneNumber' && type === 'tel') {
+      modifiedValue = validatePhoneNumber(value);
+    } else if (name === 'email' && type === 'email') {
+      // No need to modify, HTML5 email validation will be enforced
+      modifiedValue = value;
+    } else {
+      modifiedValue = value;
+    }
+
     updateFormData({
       ...formData,
       personalInfo: {
         ...formData.personalInfo,
-        [name]: value
+        [name]: modifiedValue
       }
     });
   };
-  
+
   const handleEducationChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>, index: number) => {
     const { name, value } = e.target;
     
@@ -830,45 +872,100 @@ const Step3PersonalInfo: React.FC<Step3PersonalInfoProps> = ({ formData, updateF
   };
   
   const handleLanguageProficiencyChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
+    const { name, value, type } = e.target;
+    let modifiedValue = value;
+
+    // Restrict score inputs for language proficiency fields
+    if (['overallScore', 'readingScore', 'writingScore', 'listeningScore', 'speakingScore'].includes(name)) {
+      modifiedValue = validateScoreFormat(value);
+    } else {
+      modifiedValue = value;
+    }
+
     updateFormData({
       ...formData,
       languageProficiency: {
         ...formData.languageProficiency,
-        [name]: value
+        [name]: modifiedValue
       }
     });
   };
   
-  const handleVisaRejectionChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleVisaRejectionChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
-    updateFormData({
-      ...formData,
-      visaRejection: {
-        ...formData.visaRejection,
-        [name]: type === 'radio' ? value === 'yes' : value
-      }
-    });
+    
+    if (name === 'country') {
+      // Create or update the countries array
+      const currentCountries = formData.visaRejection.countries || [];
+      updateFormData({
+        ...formData,
+        visaRejection: {
+          ...formData.visaRejection,
+          country: value, // Keep for backward compatibility
+          countries: [...currentCountries, value]
+        }
+      });
+    } else if (name === 'details') {
+      updateFormData({
+        ...formData,
+        visaRejection: {
+          ...formData.visaRejection,
+          details: value
+        }
+      });
+    } else {
+      updateFormData({
+        ...formData,
+        visaRejection: {
+          ...formData.visaRejection,
+          [name]: type === 'radio' ? value === 'yes' : value
+        }
+      });
+    }
   };
 
   const handleEmergencyContactChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
+    const { name, value, type } = e.target;
+    let modifiedValue = value;
+
+    // Apply restrictions
+    if (name === 'phoneNumber' && type === 'tel') {
+      modifiedValue = validatePhoneNumber(value);
+    } else if (name === 'email' && type === 'email') {
+      // No need to modify, HTML5 email validation will be enforced
+      modifiedValue = value;
+    } else {
+      modifiedValue = value;
+    }
+
     updateFormData({
       ...formData,
       emergencyContact: {
         ...formData.emergencyContact,
-        [name]: value
+        [name]: modifiedValue
       }
     });
   };
 
   const handleSponsorChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
+    const { name, value, type } = e.target;
+    let modifiedValue = value;
+
+    // Apply restrictions
+    if (name === 'phoneNumber' && type === 'tel') {
+      modifiedValue = validatePhoneNumber(value);
+    } else if (name === 'email' && type === 'email') {
+      // No need to modify, HTML5 email validation will be enforced
+      modifiedValue = value;
+    } else {
+      modifiedValue = value;
+    }
+
     updateFormData({
       ...formData,
       educationSponsor: {
         ...formData.educationSponsor,
-        [name]: value
+        [name]: modifiedValue
       }
     });
   };
@@ -880,9 +977,23 @@ const Step3PersonalInfo: React.FC<Step3PersonalInfoProps> = ({ formData, updateF
       position: '',
       startDate: '',
       endDate: '',
+      currentJob: false,
       jobDescription: ''
     };
-    setWorkExperiences([...workExperiences, newExperience]);
+    
+    const updatedExperiences = [...workExperiences, newExperience];
+    setWorkExperiences(updatedExperiences);
+    
+    // If this is the first experience being added, update the form data
+    if (workExperiences.length === 0) {
+      updateFormData({
+        ...formData,
+        workExperience: {
+          ...formData.workExperience,
+          hasExperience: true
+        }
+      });
+    }
   };
 
   const removeWorkExperience = (index: number) => {
@@ -890,12 +1001,18 @@ const Step3PersonalInfo: React.FC<Step3PersonalInfoProps> = ({ formData, updateF
     setWorkExperiences(updatedExperiences);
   };
 
-  const handleWorkExperienceChange = (index: number, field: string, value: string) => {
+  const handleWorkExperienceChange = (index: number, field: string, value: string | boolean) => {
     const updatedExperiences = [...workExperiences];
     updatedExperiences[index] = {
       ...updatedExperiences[index],
       [field]: value
     };
+    
+    // If "currentJob" is set to true, clear the end date
+    if (field === 'currentJob' && value === true) {
+      updatedExperiences[index].endDate = '';
+    }
+    
     setWorkExperiences(updatedExperiences);
     
     // If this is the first work experience, also update formData
@@ -904,7 +1021,8 @@ const Step3PersonalInfo: React.FC<Step3PersonalInfoProps> = ({ formData, updateF
         ...formData,
         workExperience: {
           ...formData.workExperience,
-          [field]: value
+          [field]: value,
+          ...(field === 'currentJob' && value === true ? { endDate: '' } : {})
         }
       });
     }
@@ -1435,6 +1553,37 @@ const Step3PersonalInfo: React.FC<Step3PersonalInfoProps> = ({ formData, updateF
     };
   }, []);
 
+  // Initialize the visa rejection countries array in useEffect
+  useEffect(() => {
+    // If there's a country but no countries array, initialize it
+    if (formData.visaRejection.hasRejection && 
+        formData.visaRejection.country && 
+        !formData.visaRejection.countries) {
+      updateFormData({
+        ...formData,
+        visaRejection: {
+          ...formData.visaRejection,
+          countries: [formData.visaRejection.country]
+        }
+      });
+    }
+  }, []);
+
+  // Function to remove a visa rejection country
+  const removeVisaRejectionCountry = (countryToRemove: string) => {
+    const updatedCountries = (formData.visaRejection.countries || [])
+      .filter(country => country !== countryToRemove);
+    
+    updateFormData({
+      ...formData,
+      visaRejection: {
+        ...formData.visaRejection,
+        countries: updatedCountries,
+        country: updatedCountries.length > 0 ? updatedCountries[0] : ''
+      }
+    });
+  };
+
   return (
     <StepContainer>
       <RequiredFieldsNote>Fields marked with an <span>*</span> are required.</RequiredFieldsNote>
@@ -1614,7 +1763,8 @@ const Step3PersonalInfo: React.FC<Step3PersonalInfoProps> = ({ formData, updateF
             name="phoneNumber"
             value={formData.personalInfo.phoneNumber}
             onChange={handlePersonalInfoChange}
-            placeholder="Enter your phone number"
+            placeholder="Enter 10-digit phone number"
+            pattern="[0-9]{10}"
             required
             ref={phoneNumberRef}
           />
@@ -1641,6 +1791,7 @@ const Step3PersonalInfo: React.FC<Step3PersonalInfoProps> = ({ formData, updateF
               name="name"
               value={formData.emergencyContact.name}
               onChange={handleEmergencyContactChange}
+              placeholder="Enter emergency contact name"
               required
             />
             {showErrors && errors.emergencyContact_name && <ErrorMessage>{errors.emergencyContact_name}</ErrorMessage>}
@@ -1675,6 +1826,8 @@ const Step3PersonalInfo: React.FC<Step3PersonalInfoProps> = ({ formData, updateF
               name="phoneNumber"
               value={formData.emergencyContact.phoneNumber}
               onChange={handleEmergencyContactChange}
+              placeholder="Enter 10-digit phone number"
+              pattern="[0-9]{10}"
               required
             />
             {showErrors && errors.emergencyContact_phoneNumber && <ErrorMessage>{errors.emergencyContact_phoneNumber}</ErrorMessage>}
@@ -1689,6 +1842,7 @@ const Step3PersonalInfo: React.FC<Step3PersonalInfoProps> = ({ formData, updateF
               name="email"
               value={formData.emergencyContact.email}
               onChange={handleEmergencyContactChange}
+              placeholder="Enter valid email address"
               required
             />
             {showErrors && errors.emergencyContact_email && <ErrorMessage>{errors.emergencyContact_email}</ErrorMessage>}
@@ -1876,7 +2030,8 @@ const Step3PersonalInfo: React.FC<Step3PersonalInfoProps> = ({ formData, updateF
               name="phoneNumber"
               value={formData.educationSponsor.phoneNumber}
               onChange={handleSponsorChange}
-              placeholder="Enter sponsor's phone number"
+              placeholder="Enter 10-digit phone number"
+              pattern="[0-9]{10}"
               required
             />
             {showErrors && errors.educationSponsor_phoneNumber && <ErrorMessage>{errors.educationSponsor_phoneNumber}</ErrorMessage>}
@@ -1890,7 +2045,7 @@ const Step3PersonalInfo: React.FC<Step3PersonalInfoProps> = ({ formData, updateF
               name="email"
               value={formData.educationSponsor.email}
               onChange={handleSponsorChange}
-              placeholder="Enter sponsor's email"
+              placeholder="Enter valid email address"
               required
             />
             {showErrors && errors.educationSponsor_email && <ErrorMessage>{errors.educationSponsor_email}</ErrorMessage>}
@@ -1936,7 +2091,7 @@ const Step3PersonalInfo: React.FC<Step3PersonalInfoProps> = ({ formData, updateF
                   name="overallScore"
                   value={formData.languageProficiency.overallScore}
                   onChange={handleLanguageProficiencyChange}
-                  placeholder="Enter overall score"
+                  placeholder="Enter score (max 9.0)"
                   required
                 />
                 {showErrors && errors.languageProficiency_overallScore && <ErrorMessage>{errors.languageProficiency_overallScore}</ErrorMessage>}
@@ -1966,7 +2121,7 @@ const Step3PersonalInfo: React.FC<Step3PersonalInfoProps> = ({ formData, updateF
                   name="readingScore"
                   value={formData.languageProficiency.readingScore}
                   onChange={handleLanguageProficiencyChange}
-                  placeholder="Enter reading score"
+                  placeholder="Enter score (max 9.0)"
                   required
                 />
                 {showErrors && errors.readingScore && <ErrorMessage>{errors.readingScore}</ErrorMessage>}
@@ -1980,7 +2135,7 @@ const Step3PersonalInfo: React.FC<Step3PersonalInfoProps> = ({ formData, updateF
                   name="writingScore"
                   value={formData.languageProficiency.writingScore}
                   onChange={handleLanguageProficiencyChange}
-                  placeholder="Enter writing score"
+                  placeholder="Enter score (max 9.0)"
                   required
                 />
                 {showErrors && errors.writingScore && <ErrorMessage>{errors.writingScore}</ErrorMessage>}
@@ -1996,7 +2151,7 @@ const Step3PersonalInfo: React.FC<Step3PersonalInfoProps> = ({ formData, updateF
                   name="listeningScore"
                   value={formData.languageProficiency.listeningScore}
                   onChange={handleLanguageProficiencyChange}
-                  placeholder="Enter listening score"
+                  placeholder="Enter score (max 9.0)"
                   required
                 />
                 {showErrors && errors.listeningScore && <ErrorMessage>{errors.listeningScore}</ErrorMessage>}
@@ -2010,7 +2165,7 @@ const Step3PersonalInfo: React.FC<Step3PersonalInfoProps> = ({ formData, updateF
                   name="speakingScore"
                   value={formData.languageProficiency.speakingScore}
                   onChange={handleLanguageProficiencyChange}
-                  placeholder="Enter speaking score"
+                  placeholder="Enter score (max 9.0)"
                   required
                 />
                 {showErrors && errors.speakingScore && <ErrorMessage>{errors.speakingScore}</ErrorMessage>}
@@ -2081,6 +2236,7 @@ const Step3PersonalInfo: React.FC<Step3PersonalInfoProps> = ({ formData, updateF
                       position: '',
                       startDate: '',
                       endDate: '',
+                      currentJob: false,
                       jobDescription: ''
                     }]);
                   }
@@ -2171,20 +2327,34 @@ const Step3PersonalInfo: React.FC<Step3PersonalInfoProps> = ({ formData, updateF
                   </FormGroup>
 
                   <FormGroup>
-                    <Label htmlFor={`endDate-${index}`}>End Date <span>*</span></Label>
-                    <Input
-                      id={`endDate-${index}`}
-                      type="date"
-                      value={experience.endDate}
-                      onChange={(e) => {
-                        if (validateDateFormat(e.target.value)) {
-                          handleWorkExperienceChange(index, 'endDate', e.target.value);
-                        }
-                      }}
-                      max={new Date().toISOString().split('T')[0]}
-                      pattern="\d{4}-\d{2}-\d{2}"
-                      required
-                    />
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      <Label htmlFor={`endDate-${index}`}>End Date {!experience.currentJob && <span>*</span>}</Label>
+                      <Input
+                        id={`endDate-${index}`}
+                        type="date"
+                        value={experience.endDate}
+                        onChange={(e) => {
+                          if (validateDateFormat(e.target.value)) {
+                            handleWorkExperienceChange(index, 'endDate', e.target.value);
+                          }
+                        }}
+                        max={new Date().toISOString().split('T')[0]}
+                        pattern="\d{4}-\d{2}-\d{2}"
+                        required={!experience.currentJob}
+                        disabled={experience.currentJob}
+                        style={{ marginBottom: '8px' }}
+                      />
+                      <div style={{ display: 'flex', alignItems: 'center', marginTop: '5px' }}>
+                        <input 
+                          type="checkbox" 
+                          id={`currentJob-${index}`} 
+                          checked={experience.currentJob || false}
+                          onChange={(e) => handleWorkExperienceChange(index, 'currentJob', e.target.checked)}
+                          style={{ marginRight: '8px' }}
+                        />
+                        <label htmlFor={`currentJob-${index}`}>I currently work here</label>
+                      </div>
+                    </div>
                   </FormGroup>
                 </FormRow>
 
@@ -2200,6 +2370,11 @@ const Step3PersonalInfo: React.FC<Step3PersonalInfoProps> = ({ formData, updateF
                 </FormGroup>
               </EmploymentCard>
             ))}
+            
+            <AddButton onClick={addWorkExperience}>
+              <FontAwesomeIcon icon={faPlus} />
+              Add Another Work Experience
+            </AddButton>
           </>
         )}
       </FormSection>
@@ -2240,22 +2415,75 @@ const Step3PersonalInfo: React.FC<Step3PersonalInfoProps> = ({ formData, updateF
         </FormGroup>
 
         {formData.visaRejection.hasRejection && (
-          <FormGroup>
-            <Label htmlFor="rejectionCountry">Country of Rejection <span>*</span></Label>
-            <Select
-              ref={visaRejectionCountryRef}
-              id="rejectionCountry"
-              name="country"
-              value={formData.visaRejection.country}
-              onChange={handleVisaRejectionChange}
-              required
-            >
-              <option value="">Select Country</option>
-              {COUNTRIES.map(country => (
-                <option key={country} value={country}>{country}</option>
-              ))}
-            </Select>
-          </FormGroup>
+          <>
+            {/* Show existing countries */}
+            {formData.visaRejection.countries && formData.visaRejection.countries.length > 0 && (
+              <div style={{ marginBottom: '20px' }}>
+                <Label>Selected Countries:</Label>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '10px' }}>
+                  {formData.visaRejection.countries.map((country, index) => (
+                    <div 
+                      key={index} 
+                      style={{ 
+                        backgroundColor: '#f0f0f0', 
+                        padding: '8px 12px',
+                        borderRadius: '16px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px'
+                      }}
+                    >
+                      {country}
+                      <button
+                        type="button"
+                        onClick={() => removeVisaRejectionCountry(country)}
+                        style={{ 
+                          border: 'none', 
+                          background: 'none', 
+                          cursor: 'pointer',
+                          color: '#666',
+                          padding: '0',
+                          display: 'flex',
+                          alignItems: 'center',
+                          fontSize: '14px'
+                        }}
+                      >
+                        <FontAwesomeIcon icon={faTimes} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          
+            <FormGroup>
+              <Label htmlFor="rejectionCountry">Add Country of Rejection <span>*</span></Label>
+              <Select
+                ref={visaRejectionCountryRef}
+                id="rejectionCountry"
+                name="country"
+                value=""
+                onChange={handleVisaRejectionChange}
+                required
+              >
+                <option value="">Select Country</option>
+                {COUNTRIES.map(country => (
+                  <option key={country} value={country}>{country}</option>
+                ))}
+              </Select>
+            </FormGroup>
+            
+            <FormGroup>
+              <Label htmlFor="rejectionDetails">Details (Optional)</Label>
+              <TextArea
+                id="rejectionDetails"
+                name="details"
+                value={formData.visaRejection.details || ''}
+                onChange={handleVisaRejectionChange}
+                placeholder="Enter rejection details (reason, date, etc.)"
+              />
+            </FormGroup>
+          </>
         )}
       </FormSection>
     </StepContainer>

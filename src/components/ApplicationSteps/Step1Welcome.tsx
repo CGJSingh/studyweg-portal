@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faExclamationTriangle, faUser, faUserTie, faPeopleCarry, faChevronRight } from '@fortawesome/free-solid-svg-icons';
@@ -73,27 +73,57 @@ const ApplicantTypeOptions = styled.div`
   gap: 1rem;
   flex-wrap: wrap;
   margin-top: 1rem;
+  margin-bottom: 1.5rem;
   
   @media (max-width: 768px) {
     flex-direction: column;
   }
 `;
 
-const ApplicantTypeCard = styled.div<{ selected: boolean }>`
+const ApplicantTypeCard = styled.button<{ selected: boolean }>`
   flex: 1;
   min-width: 200px;
   background-color: ${props => props.selected ? '#e8f4fc' : 'white'};
   border: 2px solid ${props => props.selected ? '#0c3b5e' : '#ddd'};
   border-radius: 8px;
   padding: 1.5rem;
-  cursor: pointer;
-  transition: all 0.2s ease;
+  cursor: pointer !important;
+  transition: all 0.3s ease;
   display: flex;
   flex-direction: column;
   align-items: center;
+  position: relative;
+  z-index: 10;
+  user-select: none;
+  text-align: center;
+  font-family: inherit;
+  margin: 0.5rem;
+  outline: none;
+  pointer-events: auto;
   
   &:hover {
-    border-color: ${props => props.selected ? '#0c3b5e' : '#aaa'};
+    border-color: #0c3b5e;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+    transform: translateY(-5px);
+    background-color: ${props => props.selected ? '#e8f4fc' : '#f7fbff'};
+    cursor: pointer;
+  }
+  
+  &:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    cursor: pointer;
+  }
+  
+  &:focus {
+    outline: none;
+    border-color: #0c3b5e;
+    box-shadow: 0 0 0 3px rgba(12, 59, 94, 0.3);
+  }
+  
+  &:disabled {
+    cursor: not-allowed !important;
+    opacity: 0.7;
   }
 `;
 
@@ -147,52 +177,11 @@ const Input = styled.input`
   }
 `;
 
-const Select = styled.select`
-  width: 100%;
-  padding: 0.75rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 1rem;
-  
-  &:focus {
-    outline: none;
-    border-color: #0c3b5e;
-  }
-`;
-
-const FormGroup = styled.div`
-  margin-top: 1.5rem;
-`;
-
-const Required = styled.span`
-  color: red;
-`;
-
 const ErrorMessage = styled.span`
   color: red;
   font-size: 0.8rem;
   margin-top: 0.5rem;
-`;
-
-const ButtonContainer = styled.div`
-  margin-top: 2rem;
-  text-align: right;
-`;
-
-const Button = styled.button<{ primary: boolean }>`
-  padding: 0.75rem 1.5rem;
-  border: none;
-  border-radius: 4px;
-  font-size: 1rem;
-  font-weight: 500;
-  color: white;
-  background-color: ${props => props.primary ? '#0c3b5e' : '#ddd'};
-  cursor: pointer;
-  transition: all 0.2s ease;
-  
-  &:hover {
-    background-color: ${props => props.primary ? '#0a2e4a' : '#ccc'};
-  }
+  display: block;
 `;
 
 interface Step1WelcomeProps {
@@ -203,6 +192,11 @@ interface Step1WelcomeProps {
 
 const Step1Welcome: React.FC<Step1WelcomeProps> = ({ formData, updateFormData, onNext }) => {
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+
+  // Debug render
+  useEffect(() => {
+    console.log("Step1Welcome rendered with formData:", formData);
+  }, [formData]);
 
   const validateForm = () => {
     const newErrors: { [key: string]: string } = {};
@@ -220,11 +214,38 @@ const Step1Welcome: React.FC<Step1WelcomeProps> = ({ formData, updateFormData, o
   };
 
   const handleApplicantTypeSelect = (type: 'Student' | 'Agent' | 'Ambassador') => {
-    updateFormData({
+    console.log(`Selected applicant type: ${type}`);
+    
+    // Create a new object to ensure we don't have reference issues
+    const updatedData = {
       ...formData,
       applicantType: type,
-      isPersonalInfoValid: false
-    });
+      // Force empty values for other fields to ensure they're present
+      agentId: type === 'Agent' ? (formData.agentId || '') : '',
+      ambassadorId: type === 'Ambassador' ? (formData.ambassadorId || '') : ''
+    };
+    console.log("Updating formData with:", JSON.stringify(updatedData, null, 2));
+    
+    // Update the form data
+    updateFormData(updatedData);
+    
+    // Clear any validation errors
+    setErrors({});
+    
+    // Log the selection was successful
+    console.log(`Successfully selected applicant type: ${type}`);
+    
+    // Force a focus on the card to ensure it's highlighted
+    const activeElement = document.activeElement as HTMLElement;
+    if (activeElement) {
+      activeElement.blur();
+    }
+    
+    // If Auto-continue is desired, call onNext after selection
+    // Commented out to prevent auto-progression to next step
+    // if (type === 'Student') {
+    //   onNext();
+    // }
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -236,18 +257,11 @@ const Step1Welcome: React.FC<Step1WelcomeProps> = ({ formData, updateFormData, o
     });
   };
 
-  const handleNext = () => {
-    if (validateForm()) {
-      updateFormData({
-        ...formData,
-        isPersonalInfoValid: true
-      });
-      onNext();
-    }
-  };
+  console.log("Rendering Step1Welcome with formData:", formData);
+  console.log("Current applicantType:", formData.applicantType);
 
   return (
-    <StepContainer>
+    <StepContainer className="step-container-interactive">
       <WelcomeMessage>
         <WelcomeTitle>Welcome to StudyWeg!</WelcomeTitle>
         
@@ -301,13 +315,20 @@ const Step1Welcome: React.FC<Step1WelcomeProps> = ({ formData, updateFormData, o
         </WelcomeText>
       </WelcomeMessage>
       
-      <ApplicantTypeSection>
+      <ApplicantTypeSection className="applicant-type-section interactive-section">
         <ApplicantTypeTitle>Who is submitting the application? *</ApplicantTypeTitle>
         
-        <ApplicantTypeOptions>
+        <ApplicantTypeOptions className="applicant-type-options interactive-section">
           <ApplicantTypeCard 
+            type="button"
             selected={formData.applicantType === 'Student'} 
-            onClick={() => handleApplicantTypeSelect('Student')}
+            onClick={() => {
+              console.log("Student button clicked");
+              handleApplicantTypeSelect('Student');
+            }}
+            aria-pressed={formData.applicantType === 'Student'}
+            tabIndex={0}
+            className="ApplicantTypeCard interactive-card"
           >
             <ApplicantTypeIcon>
               <FontAwesomeIcon icon={faUser} />
@@ -319,8 +340,15 @@ const Step1Welcome: React.FC<Step1WelcomeProps> = ({ formData, updateFormData, o
           </ApplicantTypeCard>
           
           <ApplicantTypeCard 
+            type="button"
             selected={formData.applicantType === 'Agent'} 
-            onClick={() => handleApplicantTypeSelect('Agent')}
+            onClick={() => {
+              console.log("Agent button clicked");
+              handleApplicantTypeSelect('Agent');
+            }}
+            aria-pressed={formData.applicantType === 'Agent'}
+            tabIndex={0}
+            className="ApplicantTypeCard interactive-card"
           >
             <ApplicantTypeIcon>
               <FontAwesomeIcon icon={faUserTie} />
@@ -332,8 +360,15 @@ const Step1Welcome: React.FC<Step1WelcomeProps> = ({ formData, updateFormData, o
           </ApplicantTypeCard>
           
           <ApplicantTypeCard 
+            type="button"
             selected={formData.applicantType === 'Ambassador'} 
-            onClick={() => handleApplicantTypeSelect('Ambassador')}
+            onClick={() => {
+              console.log("Ambassador button clicked");
+              handleApplicantTypeSelect('Ambassador');
+            }}
+            aria-pressed={formData.applicantType === 'Ambassador'}
+            tabIndex={0}
+            className="ApplicantTypeCard interactive-card"
           >
             <ApplicantTypeIcon>
               <FontAwesomeIcon icon={faPeopleCarry} />
@@ -348,7 +383,7 @@ const Step1Welcome: React.FC<Step1WelcomeProps> = ({ formData, updateFormData, o
         {errors.applicantType && <ErrorMessage>{errors.applicantType}</ErrorMessage>}
         
         {formData.applicantType === 'Agent' && (
-          <InputGroup>
+          <InputGroup className="interactive-section">
             <Label htmlFor="agentId">Agent ID *</Label>
             <Input 
               type="text" 
@@ -358,13 +393,14 @@ const Step1Welcome: React.FC<Step1WelcomeProps> = ({ formData, updateFormData, o
               onChange={handleInputChange} 
               placeholder="Enter your Agent ID"
               required 
+              className="interactive-input"
             />
             {errors.agentId && <ErrorMessage>{errors.agentId}</ErrorMessage>}
           </InputGroup>
         )}
         
         {formData.applicantType === 'Ambassador' && (
-          <InputGroup>
+          <InputGroup className="interactive-section">
             <Label htmlFor="ambassadorId">Ambassador ID *</Label>
             <Input 
               type="text" 
@@ -374,6 +410,7 @@ const Step1Welcome: React.FC<Step1WelcomeProps> = ({ formData, updateFormData, o
               onChange={handleInputChange} 
               placeholder="Enter your Ambassador ID"
               required 
+              className="interactive-input"
             />
             {errors.ambassadorId && <ErrorMessage>{errors.ambassadorId}</ErrorMessage>}
           </InputGroup>

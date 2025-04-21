@@ -10,6 +10,8 @@ import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import DashboardPage from './pages/DashboardPage';
 import ProfilePage from './pages/ProfilePage';
 import ApplicationPage from './pages/ApplicationPage';
+import TestApplicationPage from './pages/TestApplicationPage';
+import DebugApplicationPage from './pages/DebugApplicationPage';
 import GlobalStyles from './globalStyles';
 import './App.css';
 
@@ -36,6 +38,8 @@ function App() {
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/apply/:programId" element={<ApplicationPage />} />
+          <Route path="/test-application" element={<TestApplicationPage />} />
+          <Route path="/debug-application" element={<DebugApplicationPage />} />
           {/* Add more routes as needed */}
         </Routes>
       </Layout>

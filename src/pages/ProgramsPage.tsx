@@ -301,35 +301,35 @@ const Backdrop = styled.div<{show: boolean}>`
   transition: opacity 0.3s ease, visibility 0.3s ease;
 `;
 
-// Update the FiltersContainer to slide in from the right
+// Update the FiltersContainer to slide in from the right and prevent header overlap
 const FiltersContainer = styled(m.div)`
   position: fixed;
   top: 0;
   right: 0;
   width: 380px;
   height: 100vh;
-  background: white;
+  background-color: white;
   box-shadow: -5px 0 30px rgba(0, 0, 0, 0.15);
   padding: 2rem;
+  padding-top: 100px; /* Added padding to prevent header overlap */
   z-index: 100;
   overflow-y: auto;
   
-  /* Scrollbar styling */
   &::-webkit-scrollbar {
     width: 8px;
   }
   
   &::-webkit-scrollbar-track {
-    background: #f1f1f1;
+    background-color: #f1f1f1;
     border-radius: 10px;
   }
   
   &::-webkit-scrollbar-thumb {
-    background: #ccc;
+    background-color: #ccc;
     border-radius: 10px;
     
     &:hover {
-      background: #aaa;
+      background-color: #aaa;
     }
   }
 `;
