@@ -588,6 +588,7 @@ interface FormData {
     fieldOfStudy: string;
     grade: string;
     graduationDate: string;
+    enrollmentDate: string;
   };
   educationEntries: Array<{
     level: string;
@@ -596,6 +597,7 @@ interface FormData {
     fieldOfStudy: string;
     grade: string;
     graduationDate: string;
+    enrollmentDate: string;
   }>;
   educationSponsor: {
     name: string;
@@ -682,7 +684,8 @@ const ApplicationPage: React.FC = () => {
       institution: '',
       fieldOfStudy: '',
       grade: '',
-      graduationDate: ''
+      graduationDate: '',
+      enrollmentDate: ''
     },
     educationEntries: [],
     educationSponsor: {

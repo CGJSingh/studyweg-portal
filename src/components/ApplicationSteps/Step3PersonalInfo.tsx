@@ -429,10 +429,11 @@ const COUNTRIES = [
 interface EducationEntryType {
   level: string;
   country: string;
+  institution: string;
+  fieldOfStudy: string;
   grade: string;
   graduationDate: string;
-  fieldOfStudy: string;
-  institution: string;
+  enrollmentDate: string; // Adding enrollment date
 }
 
 interface EmploymentEntry {
@@ -536,6 +537,7 @@ interface FormData {
     fieldOfStudy: string;
     grade: string;
     graduationDate: string;
+    enrollmentDate: string; // Add enrollment date
   };
   educationEntries: Array<{
     level: string;
@@ -544,6 +546,7 @@ interface FormData {
     fieldOfStudy: string;
     grade: string;
     graduationDate: string;
+    enrollmentDate: string; // Add enrollment date
   }>;
   educationSponsor: {
     name: string;
@@ -612,6 +615,7 @@ type FieldRefsType = {
   fieldOfStudy: React.RefObject<HTMLInputElement | null>;
   grade: React.RefObject<HTMLInputElement | null>;
   graduationDate: React.RefObject<HTMLInputElement | null>;
+  enrollmentDate: React.RefObject<HTMLInputElement | null>; // Add enrollment date ref
   exam: React.RefObject<HTMLSelectElement | null>;
   overallScore: React.RefObject<HTMLInputElement | null>;
   testReportNumber: React.RefObject<HTMLInputElement | null>;
@@ -763,6 +767,7 @@ const Step3PersonalInfo: React.FC<Step3PersonalInfoProps> = ({ formData, updateF
   const fieldOfStudyRef = useRef<HTMLInputElement | null>(null);
   const gradeRef = useRef<HTMLInputElement | null>(null);
   const graduationDateRef = useRef<HTMLInputElement | null>(null);
+  const enrollmentDateRef = useRef<HTMLInputElement | null>(null); // Add enrollment date ref
   const examRef = useRef<HTMLSelectElement | null>(null);
   const overallScoreRef = useRef<HTMLInputElement | null>(null);
   const testReportNumberRef = useRef<HTMLInputElement | null>(null);
@@ -792,6 +797,7 @@ const Step3PersonalInfo: React.FC<Step3PersonalInfoProps> = ({ formData, updateF
     fieldOfStudy: fieldOfStudyRef,
     grade: gradeRef,
     graduationDate: graduationDateRef,
+    enrollmentDate: enrollmentDateRef, // Add enrollment date ref
     exam: examRef,
     overallScore: overallScoreRef,
     testReportNumber: testReportNumberRef,
@@ -841,22 +847,18 @@ const Step3PersonalInfo: React.FC<Step3PersonalInfoProps> = ({ formData, updateF
   };
   
   const addEducationEntry = () => {
-    const newEntry: EducationEntryType = {
-      level: '',
-      country: '',
-      grade: '',
-      graduationDate: '',
-      fieldOfStudy: '',
-      institution: ''
-    };
-    
-    const updatedEntries = [...educationEntries, newEntry];
-    setEducationEntries(updatedEntries);
-    
-    updateFormData({
-      education: updatedEntries[0], // Keep first entry as primary
-      educationEntries: updatedEntries // Store all entries
-    });
+    setEducationEntries([
+      ...educationEntries,
+      {
+        level: '',
+        country: '',
+        institution: '',
+        fieldOfStudy: '',
+        grade: '',
+        graduationDate: '',
+        enrollmentDate: '', // Adding enrollment date field
+      }
+    ]);
   };
   
   const removeEducationEntry = (index: number) => {
@@ -1607,6 +1609,7 @@ const Step3PersonalInfo: React.FC<Step3PersonalInfoProps> = ({ formData, updateF
               value={formData.personalInfo.firstName}
               onChange={handlePersonalInfoChange}
               required
+              placeholder="Enter your first name"
             />
             {showErrors && errors.personalInfo_firstName && <ErrorMessage>{errors.personalInfo_firstName}</ErrorMessage>}
           </FormGroup>
@@ -1621,6 +1624,7 @@ const Step3PersonalInfo: React.FC<Step3PersonalInfoProps> = ({ formData, updateF
               value={formData.personalInfo.lastName}
               onChange={handlePersonalInfoChange}
               required
+              placeholder="Enter your last name"
             />
             {showErrors && errors.personalInfo_lastName && <ErrorMessage>{errors.personalInfo_lastName}</ErrorMessage>}
           </FormGroup>
@@ -1652,6 +1656,7 @@ const Step3PersonalInfo: React.FC<Step3PersonalInfoProps> = ({ formData, updateF
               max={new Date().toISOString().split('T')[0]} // Prevent future dates
               pattern="\d{4}-\d{2}-\d{2}"
               required
+              placeholder="YYYY-MM-DD"
             />
             {showErrors && errors.personalInfo_dateOfBirth && <ErrorMessage>{errors.personalInfo_dateOfBirth}</ErrorMessage>}
           </FormGroup>
@@ -1763,7 +1768,7 @@ const Step3PersonalInfo: React.FC<Step3PersonalInfoProps> = ({ formData, updateF
             name="phoneNumber"
             value={formData.personalInfo.phoneNumber}
             onChange={handlePersonalInfoChange}
-            placeholder="Enter 10-digit phone number"
+            placeholder="+1 123 456 7890"
             pattern="[0-9]{10}"
             required
             ref={phoneNumberRef}
@@ -1870,7 +1875,7 @@ const Step3PersonalInfo: React.FC<Step3PersonalInfoProps> = ({ formData, updateF
           
           <FormRow>
             <FormGroup>
-              <Label htmlFor={`level-${index}`}>Highest Level of Education <span>*</span></Label>
+              <Label htmlFor={`level-${index}`}>Level of Education <span>*</span></Label>
               <Select 
                 ref={index === 0 ? levelRef : null}
                 id={`level-${index}`} 
@@ -1919,6 +1924,7 @@ const Step3PersonalInfo: React.FC<Step3PersonalInfoProps> = ({ formData, updateF
                 value={entry.institution}
                 onChange={(e) => handleEducationChange(e, index)}
                 required
+                placeholder="Name of your university or college"
               />
               {showErrors && index === 0 && errors.education_institution && <ErrorMessage>{errors.education_institution}</ErrorMessage>}
             </FormGroup>
@@ -1933,12 +1939,26 @@ const Step3PersonalInfo: React.FC<Step3PersonalInfoProps> = ({ formData, updateF
                 value={entry.fieldOfStudy}
                 onChange={(e) => handleEducationChange(e, index)}
                 required
+                placeholder="Your major or field of study"
               />
               {showErrors && index === 0 && errors.education_fieldOfStudy && <ErrorMessage>{errors.education_fieldOfStudy}</ErrorMessage>}
             </FormGroup>
           </FormRow>
 
           <FormRow>
+            <FormGroup>
+              <Label htmlFor={`grade-${index}`}>Grade</Label>
+              <Input 
+                ref={index === 0 ? gradeRef : null}
+                type="text" 
+                id={`grade-${index}`} 
+                name="grade"
+                value={entry.grade}
+                onChange={(e) => handleEducationChange(e, index)}
+                placeholder="Your final grade (e.g., 3.8/4.0, 85%, etc.)"
+              />
+            </FormGroup>
+
             <FormGroup>
               <Label htmlFor={`graduationDate-${index}`}>Graduation Date <span>*</span></Label>
               <Input 
@@ -1967,11 +1987,44 @@ const Step3PersonalInfo: React.FC<Step3PersonalInfoProps> = ({ formData, updateF
                   }
                 }}
                 pattern="\d{4}-\d{2}-\d{2}"
+                placeholder="When did/will you graduate?"
                 required
               />
               {showErrors && index === 0 && errors.education_graduationDate && <ErrorMessage>{errors.education_graduationDate}</ErrorMessage>}
             </FormGroup>
           </FormRow>
+
+          <FormGroup>
+            <Label htmlFor={`enrollmentDate-${index}`}>Enrollment Date</Label>
+            <Input 
+              ref={index === 0 ? enrollmentDateRef : null}
+              type="date" 
+              id={`enrollmentDate-${index}`} 
+              name="enrollmentDate"
+              value={entry.enrollmentDate}
+              onChange={(e) => {
+                const value = e.target.value;
+                const formattedDate = formatDate(value);
+                
+                if (formattedDate || value === '') {
+                  const updatedEntries = [...educationEntries];
+                  updatedEntries[index] = {
+                    ...updatedEntries[index],
+                    enrollmentDate: formattedDate
+                  };
+                  
+                  setEducationEntries(updatedEntries);
+                  
+                  updateFormData({
+                    education: updatedEntries[0], // Keep first entry as primary
+                    educationEntries: updatedEntries // Store all entries
+                  });
+                }
+              }}
+              pattern="\d{4}-\d{2}-\d{2}"
+              placeholder="When did you start this program?"
+            />
+          </FormGroup>
         </EducationEntry>
       ))}
 
