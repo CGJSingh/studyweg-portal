@@ -209,6 +209,23 @@ const InfoBox = styled.div`
   }
 `;
 
+const ValidationMessage = styled.div`
+  color: #e74c3c;
+  background-color: rgba(231, 76, 60, 0.1);
+  border-left: 3px solid #e74c3c;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  font-size: 0.95rem;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  
+  svg {
+    color: #e74c3c;
+  }
+`;
+
 interface Step5PaymentProps {
   formData: any;
   program: Program | null;
@@ -217,7 +234,10 @@ interface Step5PaymentProps {
 
 const Step5Payment: React.FC<Step5PaymentProps> = ({ formData, program, updateFormData }) => {
   const handlePaymentMethodSelect = (method: string) => {
-    updateFormData({ paymentMethod: method });
+    updateFormData({ 
+      paymentMethod: method,
+      paymentValidationAttempted: false // Clear validation message when a method is selected
+    });
   };
   
   // Calculate application fee
@@ -320,12 +340,19 @@ const Step5Payment: React.FC<Step5PaymentProps> = ({ formData, program, updateFo
         </SummaryRow>
       </PaymentSummary>
       
-      <SectionTitle>
+      <SectionTitle className="payment-methods-section">
         <div className="icon-wrapper">
           <FontAwesomeIcon icon={faCreditCard} />
           Select Payment Method
         </div>
       </SectionTitle>
+      
+      {formData.paymentValidationAttempted && !formData.paymentMethod && (
+        <ValidationMessage>
+          <FontAwesomeIcon icon={faExclamationTriangle} />
+          <span>Please select a payment method to continue with your application.</span>
+        </ValidationMessage>
+      )}
       
       <PaymentMethodsContainer>
         <PaymentMethodCard 

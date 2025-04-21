@@ -637,6 +637,7 @@ interface FormData {
   agentId?: string;
   ambassadorId?: string;
   validationErrors?: {[key: string]: string};
+  paymentValidationAttempted?: boolean;
 }
 
 const ApplicationPage: React.FC = () => {
@@ -724,7 +725,8 @@ const ApplicationPage: React.FC = () => {
     ambassadorId: '',
     documentsValid: false,
     isPersonalInfoValid: false,
-    validationErrors: {}
+    validationErrors: {},
+    paymentValidationAttempted: false
   });
 
   // Debug formData changes
@@ -933,7 +935,17 @@ const ApplicationPage: React.FC = () => {
     }
     
     if (currentStep === 5 && !formData.paymentMethod) {
-      alert('Please select a payment method');
+      // Instead of showing an alert, set a flag in formData to show validation message
+      setFormData(prevState => ({
+        ...prevState,
+        paymentValidationAttempted: true
+      }));
+      
+      // Scroll to payment methods section
+      const paymentMethodsSection = document.querySelector('.payment-methods-section');
+      if (paymentMethodsSection) {
+        paymentMethodsSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
       return;
     }
     
